@@ -1,0 +1,11 @@
+period: "2024-01"
+account:
+  - name: "mrhost"
+    platform:
+      - name: "MastriPMS"
+        cookie: "language=zh-tw; _ga=GA1.2.2040614941.1707291965; hid=7254; _gid=GA1.2.304270875.1707971767; cookiekey=bd6a3f2b686ffd39d28fef50b555d38e; currency=NT%24"
+        hotel:
+          - name: "guidetpedadaocheng"
+          - name: "getchahostel"
+          - name: "hamiltonhotel"
+          - name: "dreammansionhotel"

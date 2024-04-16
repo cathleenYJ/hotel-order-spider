@@ -1,0 +1,34 @@
+period: "2024-04"
+account:
+  - name: "mrhost"
+    platform:
+      # - name: "Traiwan"
+      #   hotel:
+      #     - name: "幸福旅行社"
+      #       cookie: "_ga=GA1.2.2079045143.1710754907; PHPSESSID=q8c09lg1hdjk2oqqmsi0kkoomv; _gid=GA1.2.2041532447.1711951153"
+      #       hotelid: "R10015"
+      - name: "Traiwan"
+        hotel:
+          - name: "月牙泉渡假行館"
+            cookie: "_ga=GA1.2.2079045143.1710754907; PHPSESSID=k61sj197r6uorck5tn9f6ob77h; _gid=GA1.2.34139433.1713166749; _gat=1"
+            hotelid: "R10040"
+      # - name: "Traiwan"
+      #   hotel:
+      #     - name: "松悅民宿"
+      #       cookie: "_ga=GA1.2.2079045143.1710754907; _gid=GA1.2.206944477.1712631461; PHPSESSID=gtke80nf3868gmeas9ljj6ipai; _gat=1"
+      #       hotelid: "R10064"
+      # - name: "Traiwan"
+      #   hotel:
+      #     - name: "小海豚民宿"
+      #       cookie: "_ga=GA1.2.2079045143.1710754907; _gid=GA1.2.2041532447.1711951153; PHPSESSID=q64paltc2j5c3tgut09jkhumqg; _gat=1"
+      #       hotelid: "R10073"
+      # - name: "Traiwan"
+      #   hotel:
+      #     - name: "尖尖民宿"
+      #       cookie: "_ga=GA1.2.2079045143.1710754907; _gid=GA1.2.2041532447.1711951153; PHPSESSID=5jlb6di9ebo3iji9or43h8m5qb; _gat=1"
+      #       hotelid: "R10097"
+      # - name: "Traiwan"
+      #   hotel:
+      #     - name: "冬映民宿"
+      #       cookie: "_ga=GA1.2.2079045143.1710754907; _gid=GA1.2.2041532447.1711951153; _gat=1; PHPSESSID=1hpiuq435m2lvvqfuloq731jof"
+      #       hotelid: "R10107"
