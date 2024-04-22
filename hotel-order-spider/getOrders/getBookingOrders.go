@@ -34,6 +34,7 @@ type ReservationsDB struct {
 	HotelId           string  `json:"hotel_id"`
 	Charge            string  `json:"charge"`
 	RoomType          string  `json:"room_type"`
+	ModifyAmt         string  `json:"modify_amt"`
 }
 
 type GetBookingReservationResponseBody struct {
@@ -118,8 +119,6 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 
 		fmt.Printf("Hotel Name: %s, Hotel ID: %s\n", hotelName, hotelId)
 
-		/// 訂單
-
 		dateFromTime, err := time.Parse("2006-01-02", dateFrom)
 		if err != nil {
 			fmt.Println("日期解析錯誤:", err)
@@ -132,7 +131,6 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 			return
 		}
 
-		// parse html using goquery
 		var resultData []ReservationsDB
 
 		if parse == "API" {
@@ -147,7 +145,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 				}
 				fmt.Println()
 
-				// 解码JSON数据
+				// 解碼JSON
 				var ordersData GetBookingReservationResponseBody
 				err = json.Unmarshal([]byte(result), &ordersData)
 				if err != nil {
@@ -221,11 +219,10 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 				fmt.Println("err", err)
 				return
 			}
-			// parse html using goquery
+
 			doc, err := goquery.NewDocumentFromReader(strings.NewReader(result))
 			if err != nil {
 				log.Fatal(err)
-				// response.ResponseFail(http.StatusInternalServerError, err.Error(), c)
 				return
 			}
 			// 儲存已經存在的 BookingId
@@ -235,7 +232,6 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 				var data ReservationsDB
 				var isDispute string
 				s.Find("td").Each(func(j int, cell *goquery.Selection) {
-					// fmt.Printf("Row %d, Cell %d: %s\n", i, j, cell.Text())
 					switch j {
 					case 0:
 						bookingId := cell.Find("span.visible-print").Text()
@@ -249,10 +245,9 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 						// 找到 "日" 的位置
 						index := strings.Index(dateText, "日")
 						if index != -1 {
-							// 截取从字符串开始到 "日" 之前的部分
+							// 取得 "日" 之前的部分
 							dateText = dateText[:index+3]
 						}
-						// 使用 time.Parse 解析原始日期字符串
 						parsedTime, err := time.Parse("2006 年 1 月 2 日", dateText)
 						if err != nil {
 							fmt.Println("日期解析錯誤:", err)
@@ -265,10 +260,9 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 						// 找到 "日" 的位置
 						index := strings.Index(dateText, "日")
 						if index != -1 {
-							// 截取从字符串开始到 "日" 之前的部分
+							// 取得 "日" 之前的部分
 							dateText = dateText[:index+3]
 						}
-						// 使用 time.Parse 解析原始日期字符串
 						parsedTime, err := time.Parse("2006 年 1 月 2 日", dateText)
 						if err != nil {
 							fmt.Println("日期解析錯誤:", err)
@@ -284,7 +278,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 						data.ReservationStatus = strings.TrimSpace(cell.Text())
 						// 使用 strings.Fields 分割字符串
 						fields := strings.Fields(data.ReservationStatus)
-						// 获取空格前的内容，即第一个元素
+						// 取得空格前的第一個元素
 						if len(fields) > 0 {
 							data.ReservationStatus = fields[0]
 						}
@@ -297,14 +291,13 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 							priceStr = strings.TrimSpace(priceStr)
 							// 使用 strings.Fields 分割字符串
 							fields := strings.Fields(priceStr)
-							// 获取空格前的内容，即第一个元素
+							// 取得空格前的第一個元素
 							if len(fields) > 0 {
 								priceStr = fields[0]
 							}
 							price, err := strconv.ParseFloat(priceStr, 64)
 							if err != nil {
 								log.Fatal(err)
-								// response.ResponseFail(http.StatusInternalServerError, err.Error(), c)
 								return
 							}
 							data.Price = price
@@ -315,14 +308,13 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 							priceStr = strings.TrimSpace(priceStr)
 							// 使用 strings.Fields 分割字符串
 							fields := strings.Fields(priceStr)
-							// 获取空格前的内容，即第一个元素
+							// 取得空格前的第一個元素
 							if len(fields) > 0 {
 								priceStr = fields[0]
 							}
 							price, err := strconv.ParseFloat(priceStr, 64)
 							if err != nil {
 								log.Fatal(err)
-								// response.ResponseFail(http.StatusInternalServerError, err.Error(), c)
 								return
 							}
 							data.Price = price
@@ -333,14 +325,13 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 							priceStr = strings.TrimSpace(priceStr)
 							// 使用 strings.Fields 分割字符串
 							fields := strings.Fields(priceStr)
-							// 获取空格前的内容，即第一个元素
+							// 取得空格前的第一個元素
 							if len(fields) > 0 {
 								priceStr = fields[0]
 							}
 							price, err := strconv.ParseFloat(priceStr, 64)
 							if err != nil {
 								log.Fatal(err)
-								// response.ResponseFail(http.StatusInternalServerError, err.Error(), c)
 								return
 							}
 							data.Price = price
@@ -414,7 +405,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 					data.Platform = platformName
 					data.HotelId = hotelId
 					data.Currency = currency
-					// 檢查 BookingId 是否为空或已存在于 existingBookingIds 中，如果是，就不加入 resultData
+					// 檢查 BookingId 是否為空或是已經存在 existingBookingIds 中，如果是，就不加入 resultData
 					if data.BookingId != "" && data.ReservationStatus != "" && data.Charge != "" {
 						if !existingBookingIds[data.BookingId] {
 							if data.ReservationStatus == "已入住" {
@@ -435,13 +426,14 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 							}
 
 							if isDispute == "dispute" {
-								data.Price = 0
-								data.Commission = 0
+								// data.Price = 0
+								// data.Commission = 0
+								data.ModifyAmt = "discount"
 							}
 
 							resultData = append(resultData, data)
 							file.AppendToFile("hotel_orders.txt", data.BookingId+"\t"+data.GuestName+"\t"+data.CheckInDate+"\t"+data.CheckOutDate+"\t"+strconv.FormatInt(data.RoomNights, 10)+"\t"+data.ReservationStatus+"\t"+strconv.FormatFloat(data.Price, 'f', 2, 64)+"\t"+strconv.FormatFloat(data.Commission, 'f', 2, 64)+"\n")
-							// 将当前 BookingId 添加到 existingBookingIds 中
+							// 將目前的 BookingId 添加到 existingBookingIds 中
 							existingBookingIds[data.BookingId] = true
 						}
 					}
@@ -459,7 +451,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 
 		var resultDB string
 		// 將資料存入DB
-		apiurl := "http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB"
+		apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
 		if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 			fmt.Println("setParseHtmlToDB failed!")
 			return
@@ -480,7 +472,7 @@ func GetBookingSessionID(cookie string) string {
 		log.Fatal(err)
 		return "failed"
 	}
-	// fmt.Printf(result)
+
 	var session = ""
 	doc.Find("script").Each(func(i int, s *goquery.Selection) {
 		_, ok := s.Attr("data-capla-application-context")

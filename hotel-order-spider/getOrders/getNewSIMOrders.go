@@ -125,7 +125,7 @@ func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo string) {
 
 			var parsedTime time.Time
 			if reservation.PmsLastSentAt == "" {
-				parsedTime = time.Time{} // set parsedTime to zero value
+				parsedTime = time.Time{}
 			} else {
 				parsedTime, err = time.Parse(time.RFC3339, reservation.PmsLastSentAt)
 				if err != nil {
@@ -178,7 +178,7 @@ func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo string) {
 
 		var resultDB string
 		// 將資料存入DB
-		apiurl := `http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB`
+		apiurl := `http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB`
 		if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 			fmt.Println("setParseHtmlToDB failed!")
 			return
@@ -194,8 +194,6 @@ func DoRequestAndGetResponse_sit(method, postUrl string, reqBody io.Reader, cook
 	}
 
 	req.Header.Set("x-xsrf-token", x_xsrf_token)
-	// req.Header.Set("x-sm-trace-token", "0d80f7a4-fbe3-4adc-bf93-3502ae292434")
-	// req.Header.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36")
 	req.Header.Set("Cookie", cookie)
 
 	fmt.Println("resBody", resBody)

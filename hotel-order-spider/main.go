@@ -30,8 +30,8 @@ type ReservationsDB struct {
 
 func main() {
 
-	viper.SetConfigFile("config_traiwan.yaml")
-	viper.AddConfigPath(".")
+	viper.SetConfigFile("config_expedia.yaml")
+	viper.AddConfigPath("./config")
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Error reading config file:", err)
@@ -102,12 +102,24 @@ func main() {
 					getOrders.GetCtrip(platform, platformName, accountName, dateFrom, dateTo)
 				}
 
-				if platformName == "Hostelworld" {
-					getOrders.GetHostelworld(platform, platformName, dateFrom, dateTo)
+				if platformName == "Agoda" {
+					getOrders.GetAgoda(platform, dateFrom, dateTo)
+				}
+
+				if platformName == "Expedia" {
+					getOrders.GetExpedia(platform, dateFrom, dateTo)
+				}
+
+				if platformName == "OldSIM" {
+					getOrders.GetOldSIM(platform, dateFrom, dateTo)
 				}
 
 				if platformName == "NewSIM" {
 					getOrders.GetNewSIM(platform, dateFrom, dateTo)
+				}
+
+				if platformName == "Hostelworld" {
+					getOrders.GetHostelworld(platform, platformName, dateFrom, dateTo)
 				}
 
 				if platformName == "Owlting" {
@@ -116,6 +128,10 @@ func main() {
 
 				if platformName == "Traiwan" {
 					getOrders.GetTraiwan(platform, dateFrom, dateTo)
+				}
+
+				if platformName == "MastriPMS" {
+					getOrders.GetMastri(platform, dateFrom, dateTo)
 				}
 
 			}

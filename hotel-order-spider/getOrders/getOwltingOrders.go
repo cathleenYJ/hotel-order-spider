@@ -41,7 +41,6 @@ type GetOwltingOrderResponseBody2 struct {
 			Order_stay_night int    `json:"order_stay_night"`
 		} `json:"info"`
 		Rooms []struct {
-			//Date   string  `json:"date"`
 			Room_name        string `json:"room_name"`
 			Room_config_name string `json:"room_config_name"`
 		} `json:"rooms"`
@@ -53,7 +52,6 @@ type GetOwltingOrderResponseBody2 struct {
 		} `json:"summary"`
 
 		First_payment struct {
-			//Total        string  `json:"total"`
 			Created_at string `json:"created_at"`
 		} `json:"first_payment"`
 	} `json:"data"`
@@ -91,11 +89,6 @@ func GetOwlting(platform map[string]interface{}, dateFrom, dateTo string) {
 		}
 		fmt.Println("hotelName", hotelName)
 
-		// hotelId, ok := hotel["hotelid"].(string)
-		// if !ok {
-		// 	fmt.Println("無法取得 hotel id")
-		// 	continue
-		// }
 		batchid, ok := hotel["batchid"].(string)
 		if !ok {
 			fmt.Println("無法取得 batch id")
@@ -119,7 +112,6 @@ func GetOwlting(platform map[string]interface{}, dateFrom, dateTo string) {
 		}
 		pageCount := ordersData.Pagination.Total_pages
 		fmt.Println("pageCount:", pageCount)
-		// fmt.Println(ordersData)
 
 		var resultData []ReservationsDB
 		var data ReservationsDB
@@ -139,20 +131,15 @@ func GetOwlting(platform map[string]interface{}, dateFrom, dateTo string) {
 				fmt.Println("JSON解碼錯誤:", err)
 				return
 			}
-			// fmt.Println("orderData", orderData)
 
-			//roomNights, _ := strconv.ParseInt(orderData.Data.Info.Order_stay_night, 10, 64)
 			data.RoomNights = int64(orderData.Data.Info.Order_stay_night)
 
 			roomInfoData := make(map[string]*RoomInfo_owl)
 			for _, roomReservation := range orderData.Data.Rooms {
 				roomType := roomReservation.Room_name
-				//date := roomReservation.Date
 
-				// 获取房间信息
 				roomInfo, ok := roomInfoData[roomType]
 				if !ok {
-					// 如果房间信息不存在，创建新的 RoomInfo
 					roomInfo = &RoomInfo_owl{
 						RoomType: roomType,
 						Count:    1,
@@ -199,8 +186,6 @@ func GetOwlting(platform map[string]interface{}, dateFrom, dateTo string) {
 			data.CheckOutDate = checkOutTime.Format("2006-01-02")
 			data.CheckInDate = checkInTime.Format("2006-01-02")
 
-			//floatNum, _ := strconv.ParseFloat(orderData.Data.Summary.Hotel.Receivable_total, 64)
-
 			data.Price = float64(orderData.Data.Summary.Hotel.Receivable_total)
 			if data.Price == 0 {
 				data.Price = float64(orderData.Data.Summary.Hotel.Paid_total)
@@ -239,7 +224,7 @@ func GetOwlting(platform map[string]interface{}, dateFrom, dateTo string) {
 
 		var resultDB string
 		// 將資料存入DB
-		apiurl := "http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB"
+		apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
 		if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 			fmt.Println("setParseHtmlToDB failed!")
 			return
@@ -258,9 +243,6 @@ func DoRequestAndGetResponse_owl(method, postUrl string, reqBody io.Reader, cook
 	req.Header.Set("Cookie", cookie)
 	switch resBody.(type) {
 	case *string:
-		// fmt.Println("123 string")
-		// fmt.Println(resBody)
-
 		req.Header.Set("Content-Type", "application/json")
 	default:
 		fmt.Println("not string")
@@ -272,7 +254,6 @@ func DoRequestAndGetResponse_owl(method, postUrl string, reqBody io.Reader, cook
 	if err != nil {
 		return err
 	}
-	// fmt.Println(resp)
 
 	// resBody of type *string is for html
 	switch resBody := resBody.(type) {

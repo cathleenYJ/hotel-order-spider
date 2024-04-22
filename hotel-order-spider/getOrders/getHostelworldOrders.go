@@ -50,12 +50,10 @@ func GetHostelworld(platform map[string]interface{}, platformName, dateFrom, dat
 				return
 			}
 
-			// parse html using goquery
 			var resultData []ReservationsDB
 			doc, err := goquery.NewDocumentFromReader(strings.NewReader(result))
 			if err != nil {
 				log.Fatal(err)
-				// response.ResponseFail(http.StatusInternalServerError, err.Error(), c)
 				return
 			}
 
@@ -128,11 +126,7 @@ func GetHostelworld(platform map[string]interface{}, platformName, dateFrom, dat
 					// 檢查 BookingId 是否为空或已存在于 existingBookingIds 中，如果是，就不加入 resultData
 					if data.BookingId != "" && data.Price != 0 && data.RoomType != "" {
 						if !existingBookingIds[data.BookingId] {
-
 							resultData = append(resultData, data)
-							// file.AppendToFile("hotel_orders.txt", data.BookingId+"\t"+data.GuestName+"\t"+data.CheckOutDate+"\t"+strconv.FormatFloat(data.Price, 'f', 2, 64)+"\n")
-
-							// 将当前 BookingId 添加到 existingBookingIds 中
 							existingBookingIds[data.BookingId] = true
 
 						}
@@ -150,7 +144,7 @@ func GetHostelworld(platform map[string]interface{}, platformName, dateFrom, dat
 
 			var resultDB string
 			// 將資料存入DB
-			apiurl := "http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB"
+			apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
 			if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 				fmt.Println("setParseHtmlToDB failed!")
 				return
@@ -159,13 +153,13 @@ func GetHostelworld(platform map[string]interface{}, platformName, dateFrom, dat
 	}
 }
 
-// 清理日期字符串中的"th", "st", "nd", "rd"和前导零
+// 清理日期字串中的 "th", "st", "nd", "rd" 和 0
 func cleanDateString(date string) string {
-	// 使用正则表达式替换"th", "st", "nd", "rd"
+	// 替換 "th", "st", "nd", "rd"
 	re := regexp.MustCompile(`(\d+)(st|nd|rd|th)`)
 	cleanedDate := re.ReplaceAllString(date, "$1")
 
-	// 去除前导零
+	// 去除 0
 	cleanedDate = strings.TrimLeft(cleanedDate, "0")
 
 	return cleanedDate

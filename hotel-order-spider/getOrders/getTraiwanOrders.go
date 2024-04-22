@@ -93,8 +93,6 @@ func GetTraiwan(platform map[string]interface{}, dateFrom, dateTo string) {
 
 		fmt.Println("ordersData", ordersData)
 
-		// fmt.Println(ordersData.Orders.Order[3].Room_reservations[0].Room_type.Name)
-
 		var resultData []ReservationsDB
 		var data ReservationsDB
 		for _, reservation := range ordersData.Orders.Order {
@@ -106,10 +104,8 @@ func GetTraiwan(platform map[string]interface{}, dateFrom, dateTo string) {
 				roomType := roomReservation.Room_type.Name
 				date := roomReservation.Date
 
-				// 获取房间信息
 				roomInfo, ok := roomInfoData[roomType]
 				if !ok {
-					// 如果房间信息不存在，创建新的 RoomInfo
 					roomInfo = &RoomInfo{
 						RoomType:  roomType,
 						StartDate: date,
@@ -117,14 +113,11 @@ func GetTraiwan(platform map[string]interface{}, dateFrom, dateTo string) {
 					}
 					roomInfoData[roomType] = roomInfo
 				} else {
-					// 如果房间信息已存在，检查日期是否连续
 					roomInfo.Days++
-					//roomInfo.StartDate = date
 				}
 			}
 			var combinedRoomInfo string
 			for _, roomInfo := range roomInfoData {
-				//fmt.Printf("房间类型：%s，连续天数：%d\n", roomInfo.RoomType, roomInfo.Days, roomInfo.StartDate)
 				arrivalTime, err := time.Parse("2006-01-02", roomInfo.StartDate)
 				if err != nil {
 					fmt.Println("Error parsing arrival time:", err)
@@ -180,7 +173,7 @@ func GetTraiwan(platform map[string]interface{}, dateFrom, dateTo string) {
 
 		var resultDB string
 		// 將資料存入DB
-		apiurl := "http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB"
+		apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
 		if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 			fmt.Println("setParseHtmlToDB failed!")
 			return
@@ -197,16 +190,6 @@ func DoRequestAndGetResponse_trai(method, postUrl string, reqBody io.Reader, coo
 
 	req.Header.Set("Cookie", cookie)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-	// switch resBody := resBody.(type) {
-	// case *string:
-	// 	// fmt.Println("string")
-	// 	// fmt.Println(resBody)
-
-	// 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-	// default:
-	// 	fmt.Println("not string")
-	// 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-	// }
 
 	client := &http.Client{Timeout: 40 * time.Second}
 	resp, err := client.Do(req)

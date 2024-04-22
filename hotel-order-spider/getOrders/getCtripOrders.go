@@ -10,9 +10,8 @@ import (
 
 type GetTripVCCOrderResponseBody struct {
 	Data []struct {
-		HotelId int64 `json:"hotelId"`
-		OrderId int64 `json:"orderId"`
-		// ReservationStatus    string  `json:"reservation_status"`
+		HotelId            int64   `json:"hotelId"`
+		OrderId            int64   `json:"orderId"`
 		CardInfoDataID     string  `json:"cardInfoDataID"`
 		GuestName          string  `json:"guestName"`
 		CheckInDate        string  `json:"checkInDate"`
@@ -180,10 +179,9 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 							return
 						}
 
-						// parse html using goquery
 						var resultData []ReservationsDB
 
-						// 解码JSON数据
+						// 解碼JSON
 						var ordersData GetTripVCCOrderResponseBody
 						err := json.Unmarshal([]byte(result), &ordersData)
 						if err != nil {
@@ -256,7 +254,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 
 							var resultDB string
 							// 將資料存入DB
-							apiurl := "http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB"
+							apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
 							if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 								fmt.Println("setParseHtmlToDB failed!")
 								return
@@ -290,10 +288,9 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 									return
 								}
 
-								// parse html using goquery
 								var resultData []ReservationsDB
 
-								// 解码JSON数据
+								// 解碼JSON
 								var ordersData TripPrePaidData
 								err := json.Unmarshal([]byte(result), &ordersData)
 								if err != nil {
@@ -347,7 +344,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 
 									var resultDB string
 									// 將資料存入DB
-									apiurl := "http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB"
+									apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
 									if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 										fmt.Println("setParseHtmlToDB failed!")
 										return
@@ -384,10 +381,9 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 									return
 								}
 
-								// parse html using goquery
 								var resultData []ReservationsDB
 
-								// 解码JSON数据
+								// 解碼JSON
 								var ordersData TripPrePaidData
 								err := json.Unmarshal([]byte(result), &ordersData)
 								if err != nil {
@@ -442,7 +438,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 
 									var resultDB string
 									// 將資料存入DB
-									apiurl := "http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB"
+									apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
 									if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 										fmt.Println("setParseHtmlToDB failed!")
 										return
@@ -484,10 +480,9 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 							return
 						}
 
-						// parse html using goquery
 						var resultData []ReservationsDB
 
-						// 解码JSON数据
+						// 解碼JSON
 						var ordersData TripPaidData
 						err := json.Unmarshal([]byte(result), &ordersData)
 						if err != nil {
@@ -550,7 +545,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 
 							var resultDB string
 							// 將資料存入DB
-							apiurl := "http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB"
+							apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
 							if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 								fmt.Println("setParseHtmlToDB failed!")
 								return
@@ -577,10 +572,9 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 							return
 						}
 
-						// parse html using goquery
 						var resultData []ReservationsDB
 
-						// 解码JSON数据
+						// 解碼JSON
 						var ordersData TripEBKData
 						err := json.Unmarshal([]byte(result), &ordersData)
 						if err != nil {
@@ -622,12 +616,9 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 
 							resultData = append(resultData, data)
 						}
-						// Increment pageIndex for the next iteration
+
 						pageIndex++
-
-						// Add a delay to avoid hitting the API too frequently
 						time.Sleep(1 * time.Second)
-
 						fmt.Println("resultdata", resultData)
 
 						if len(resultData) != 0 {
@@ -640,7 +631,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 
 							var resultDB string
 							// 將資料存入DB
-							apiurl := "http://149.28.24.90:8893/revenue_booking/setParseHtmlToDB"
+							apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
 							if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 								fmt.Println("setParseHtmlToDB failed!")
 								return

@@ -1,0 +1,10 @@
+period: "2024-03"
+account:
+  - name: "mrhost"
+    platform:
+      - name: "MastriPMS"
+        hotel:
+          - name: "guidetpedadaocheng"
+          # - name: "getchahostel"
+          # - name: "hamiltonhotel"
+          # - name: "dreammansionhotel"
