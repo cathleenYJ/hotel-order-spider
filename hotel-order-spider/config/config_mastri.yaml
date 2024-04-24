@@ -5,6 +5,6 @@ account:
       - name: "MastriPMS"
         hotel:
           - name: "guidetpedadaocheng"
-          # - name: "getchahostel"
-          # - name: "hamiltonhotel"
-          # - name: "dreammansionhotel"
+          - name: "getchahostel"
+          - name: "hamiltonhotel"
+          - name: "dreammansionhotel"

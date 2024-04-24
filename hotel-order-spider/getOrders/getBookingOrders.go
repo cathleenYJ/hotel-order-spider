@@ -175,7 +175,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 					days := int(duration.Hours() / 24)
 					data.RoomNights = int64(days)
 
-					data.Price = reservation.Price.Amount
+					data.Price = reservation.Price.Amount - reservation.Commission.Original.Amount
 					data.Commission = reservation.Commission.Original.Amount
 					data.ReservationStatus = reservation.ReservationStatus
 					data.Platform = platformName
@@ -405,6 +405,8 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 					data.Platform = platformName
 					data.HotelId = hotelId
 					data.Currency = currency
+
+					data.Price = data.Price - data.Commission
 					// 檢查 BookingId 是否為空或是已經存在 existingBookingIds 中，如果是，就不加入 resultData
 					if data.BookingId != "" && data.ReservationStatus != "" && data.Charge != "" {
 						if !existingBookingIds[data.BookingId] {
@@ -426,8 +428,6 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 							}
 
 							if isDispute == "dispute" {
-								// data.Price = 0
-								// data.Commission = 0
 								data.ModifyAmt = "discount"
 							}
 

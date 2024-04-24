@@ -5,23 +5,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type GetMastriOrderResponseBody []struct {
-	Source      string `json:"source"`
-	Type        string `json:"type"`
-	Status      string `json:"status"`
-	Number      string `json:"number"`
-	Name        string `json:"name"`
-	CheckIn     string `json:"check_in"`
-	CheckOut    string `json:"check_out"`
-	BookingRoom string `json:"booking_room"`
-	CheckInRoom string `json:"check_in_room"`
-	Rooms       int    `json:"rooms"`
-	Price       string `json:"price"`
-	CreatedAt   string `json:"created_at"`
-	CanceledAt  string `json:"canceled_at"`
+	Source        string `json:"source"`
+	Type          string `json:"type"`
+	Status        string `json:"status"`
+	Number        string `json:"number"`
+	Name          string `json:"name"`
+	CheckIn       string `json:"check_in"`
+	CheckOut      string `json:"check_out"`
+	BookingRoom   string `json:"booking_room"`
+	CheckInRoom   string `json:"check_in_room"`
+	Rooms         int    `json:"rooms"`
+	Price         string `json:"price"`
+	InvoiceAmount string `json:"invoice_amount"`
+	CreatedAt     string `json:"created_at"`
+	CanceledAt    string `json:"canceled_at"`
 }
 
 func GetMastri(platform map[string]interface{}, dateFrom, dateTo string) {
@@ -88,7 +90,7 @@ func GetMastri(platform map[string]interface{}, dateFrom, dateTo string) {
 			data.BookingId = reservation.Number
 			data.Currency = "TWD"
 
-			price, _ := strconv.ParseFloat(reservation.Price, 64)
+			price, _ := strconv.ParseFloat(strings.ReplaceAll(reservation.InvoiceAmount, ",", ""), 64)
 			data.Price = price
 
 			startDate, _ := time.Parse("2006-01-02", reservation.CheckIn)
@@ -128,6 +130,5 @@ func GetMastri(platform map[string]interface{}, dateFrom, dateTo string) {
 			fmt.Println("setParseHtmlToDB failed!")
 			return
 		}
-		fmt.Println("resultDB:", resultDB)
 	}
 }

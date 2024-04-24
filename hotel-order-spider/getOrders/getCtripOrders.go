@@ -60,13 +60,13 @@ type TripPaidData struct {
 }
 
 type GetTripPaidOrderResponseBody struct {
-	OrderId            string  `json:"orderId"`
-	HotelId            int     `json:"hotelId"`
-	ClientName         string  `json:"clientName"`
-	ConfirmETA         string  `json:"confirmETA"`
-	ConfirmETD         string  `json:"confirmETD"`
-	Currency           string  `json:"currency"`
-	ConfirmPriceAmount float64 `json:"confirmPriceAmount"`
+	OrderId           string  `json:"orderId"`
+	HotelId           int     `json:"hotelId"`
+	ClientName        string  `json:"clientName"`
+	ConfirmETA        string  `json:"confirmETA"`
+	ConfirmETD        string  `json:"confirmETD"`
+	Currency          string  `json:"currency"`
+	ConfirmCostAmount float64 `json:"confirmCostAmount"`
 }
 
 type TripEBKData struct {
@@ -150,7 +150,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 				}
 				fmt.Printf("token: %s", token)
 
-				if accountName != "EBK" && accountName != "Other" {
+				if accountName != "上海雀の花园民宿" && accountName != "豐豐民宿" {
 					// VCC
 					if hotelid_pre != "" {
 						fmt.Println()
@@ -497,7 +497,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 							if _, ok := priceMap[bookingID]; !ok {
 								priceMap[bookingID] = 0
 							}
-							priceMap[bookingID] += reservation.ConfirmPriceAmount
+							priceMap[bookingID] += reservation.ConfirmCostAmount
 						}
 
 						var data ReservationsDB
@@ -555,7 +555,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 				}
 
 				//EBK
-				if accountName == "EBK" || accountName == "Other" {
+				if accountName == "上海雀の花园民宿" || accountName == "豐豐民宿" {
 
 					pageIndex := 1
 

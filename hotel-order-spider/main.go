@@ -29,111 +29,130 @@ type ReservationsDB struct {
 }
 
 func main() {
-
-	viper.SetConfigFile("config_expedia.yaml")
-	viper.AddConfigPath("./config")
-
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println("Error reading config file:", err)
-		return
+	configFiles := []string{
+		"./config/config_agoda.yaml",
+		"./config/config_booking.yaml",
+		"./config/config_ctrip.yaml",
+		"./config/config_expedia.yaml",
+		"./config/config_mastri.yaml",
+		"./config/config_newSIM.yaml",
+		"./config/config_oldSIM.yaml",
+		"./config/config_owlting.yaml",
+		// "./config/config_hostelworld.yaml",
+		// "./config/config_traiwan.yaml",
 	}
 
-	period := viper.GetString("period")
+	for _, configFile := range configFiles {
+		// 執行兩次
+		for i := 0; i < 2; i++ {
+			fmt.Println("-----第 ", i+1, " 次----- ")
 
-	// period轉為時間
-	timeFormat := "2006-01"
-	startTime, err := time.Parse(timeFormat, period)
-	if err != nil {
-		fmt.Println("Error parsing period:", err)
-		return
-	}
+			viper.SetConfigFile(configFile)
+			viper.AddConfigPath(".")
 
-	// 設定 dateFrom
-	dateFrom := startTime.Format("2006-01-02")
-
-	// 設定 dateTo
-	lastDayOfMonth := startTime.AddDate(0, 1, -1)
-	dateTo := lastDayOfMonth.Format("2006-01-02")
-
-	accounts := viper.Get("account").([]interface{})
-	if accounts == nil {
-		fmt.Println("無法取得 account")
-		return
-	}
-
-	for _, acc := range accounts {
-		account := acc.(map[string]interface{})
-
-		accountName, ok := account["name"].(string)
-		if !ok {
-			fmt.Println("無法取得 account name")
-			continue
-		}
-
-		fmt.Printf("accountName: %s\n", accountName)
-
-		if platformRaw, ok := account["platform"]; ok {
-			platforms, ok := platformRaw.([]interface{})
-			if !ok || platforms == nil {
-				fmt.Println("無法取得 platform")
-				continue
+			if err := viper.ReadInConfig(); err != nil {
+				fmt.Println("Error reading config file:", err)
+				return
 			}
 
-			for _, platformRaw := range platforms {
-				platform, ok := platformRaw.(map[string]interface{})
-				if !ok || platform == nil {
-					fmt.Println("無法取得 platform")
-					continue
-				}
+			period := viper.GetString("period")
 
-				platformName, ok := platform["name"].(string)
+			// period轉為時間
+			timeFormat := "2006-01"
+			startTime, err := time.Parse(timeFormat, period)
+			if err != nil {
+				fmt.Println("Error parsing period:", err)
+				return
+			}
+
+			// 設定 dateFrom
+			dateFrom := startTime.Format("2006-01-02")
+
+			// 設定 dateTo
+			lastDayOfMonth := startTime.AddDate(0, 1, -1)
+			dateTo := lastDayOfMonth.Format("2006-01-02")
+
+			accounts := viper.Get("account").([]interface{})
+			if accounts == nil {
+				fmt.Println("無法取得 account")
+				return
+			}
+
+			for _, acc := range accounts {
+				account := acc.(map[string]interface{})
+
+				accountName, ok := account["name"].(string)
 				if !ok {
-					fmt.Println("無法取得 platform name")
+					fmt.Println("無法取得 account name")
 					continue
 				}
 
-				fmt.Printf("platformName: %s\n", platformName)
+				fmt.Printf("accountName: %s\n", accountName)
 
-				if platformName == "Booking" {
-					getOrders.GetBooking(platform, platformName, period, dateFrom, dateTo)
+				if platformRaw, ok := account["platform"]; ok {
+					platforms, ok := platformRaw.([]interface{})
+					if !ok || platforms == nil {
+						fmt.Println("無法取得 platform")
+						continue
+					}
+
+					for _, platformRaw := range platforms {
+						platform, ok := platformRaw.(map[string]interface{})
+						if !ok || platform == nil {
+							fmt.Println("無法取得 platform")
+							continue
+						}
+
+						platformName, ok := platform["name"].(string)
+						if !ok {
+							fmt.Println("無法取得 platform name")
+							continue
+						}
+
+						fmt.Printf("platformName: %s\n", platformName)
+
+						if platformName == "Booking" {
+							getOrders.GetBooking(platform, platformName, period, dateFrom, dateTo)
+						}
+
+						if platformName == "Ctrip" {
+							getOrders.GetCtrip(platform, platformName, accountName, dateFrom, dateTo)
+						}
+
+						if platformName == "Agoda" {
+							getOrders.GetAgoda(platform, dateFrom, dateTo)
+						}
+
+						if platformName == "Expedia" {
+							getOrders.GetExpedia(platform, dateFrom, dateTo)
+						}
+
+						if platformName == "OldSIM" {
+							getOrders.GetOldSIM(platform, dateFrom, dateTo)
+						}
+
+						if platformName == "NewSIM" {
+							getOrders.GetNewSIM(platform, dateFrom, dateTo)
+						}
+
+						if platformName == "Hostelworld" {
+							getOrders.GetHostelworld(platform, platformName, dateFrom, dateTo)
+						}
+
+						if platformName == "Owlting" {
+							getOrders.GetOwlting(platform, dateFrom, dateTo)
+						}
+
+						if platformName == "Traiwan" {
+							getOrders.GetTraiwan(platform, dateFrom, dateTo)
+						}
+
+						if platformName == "MastriPMS" {
+							getOrders.GetMastri(platform, dateFrom, dateTo)
+						}
+
+					}
 				}
-
-				if platformName == "Ctrip" {
-					getOrders.GetCtrip(platform, platformName, accountName, dateFrom, dateTo)
-				}
-
-				if platformName == "Agoda" {
-					getOrders.GetAgoda(platform, dateFrom, dateTo)
-				}
-
-				if platformName == "Expedia" {
-					getOrders.GetExpedia(platform, dateFrom, dateTo)
-				}
-
-				if platformName == "OldSIM" {
-					getOrders.GetOldSIM(platform, dateFrom, dateTo)
-				}
-
-				if platformName == "NewSIM" {
-					getOrders.GetNewSIM(platform, dateFrom, dateTo)
-				}
-
-				if platformName == "Hostelworld" {
-					getOrders.GetHostelworld(platform, platformName, dateFrom, dateTo)
-				}
-
-				if platformName == "Owlting" {
-					getOrders.GetOwlting(platform, dateFrom, dateTo)
-				}
-
-				if platformName == "Traiwan" {
-					getOrders.GetTraiwan(platform, dateFrom, dateTo)
-				}
-
-				if platformName == "MastriPMS" {
-					getOrders.GetMastri(platform, dateFrom, dateTo)
-				}
-
 			}
 		}
 	}

@@ -4,14 +4,66 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
-	"sync"
+	"io"
+	"net/http"
 	"time"
 )
 
-func GetExpedia(platform map[string]interface{}, dateFrom, dateTo string) {
+type GetExpediaReservationsAPIRequestBody struct {
+	Query string `json:"query"`
+}
 
+type ExpediaReservationItem struct {
+	GuestName        string  `json:"guest_name"`
+	CheckInDate      string  `json:"check_in_date"`
+	CheckOutDate     string  `json:"check_out_date"`
+	BookDate         string  `json:"book_date"`
+	RoomType         string  `json:"room_type"`
+	PaymentType      string  `json:"payment_type"`
+	Price            float64 `json:"price"`
+	ReservationId    string  `json:"reservation_id"`
+	ConfirmationCode string  `json:"confirmation_code"`
+	Status           string  `json:"status"`
+	HotelId          string  `json:"hotel_id"`
+	RoomNights       int64   `json:"room_nights"`
+}
+
+type GetExpediaReservationsResponseBody struct {
+	Data struct {
+		ReservationSearchV2 struct {
+			ReservationItems []struct {
+				ReservationItemID string `json:"reservationItemId"`
+				ReservationInfo   struct {
+					StartDate      string `json:"startDate"`
+					EndDate        string `json:"endDate"`
+					CreateDateTime string `json:"createDateTime"`
+					Product        struct {
+						UnitName string `json:"unitName"`
+					} `json:"product"`
+					ReservationAttributes struct {
+						StayStatus string `json:"stayStatus"`
+					} `json:"reservationAttributes"`
+				} `json:"reservationInfo"`
+				Customer struct {
+					GuestName string `json:"guestName"`
+				} `json:"customer"`
+				ConfirmationInfo struct {
+					ProductConfirmationCode string `json:"productConfirmationCode"`
+				} `json:"confirmationInfo"`
+				TotalAmounts struct {
+					TotalAmountForPartners struct {
+						Value float64 `json:"value"`
+					} `json:"totalAmountForPartners"`
+				} `json:"totalAmounts"`
+				PaymentInfo struct {
+					EvcCardDetailsExist any `json:"evcCardDetailsExist"`
+				} `json:"paymentInfo"`
+			} `json:"reservationItems"`
+		} `json:"reservationSearchV2"`
+	} `json:"data"`
+}
+
+func GetExpedia(platform map[string]interface{}, dateFrom, dateTo string) {
 	cookie, ok := platform["cookie"].(string)
 	if !ok {
 		fmt.Println("cookie error")
@@ -42,99 +94,65 @@ func GetExpedia(platform map[string]interface{}, dateFrom, dateTo string) {
 			continue
 		}
 
-		url := fmt.Sprintf("https://ycs.agoda.com/zh-tw/%s/kipp/api/hotelBookingApi/Get", hotelId)
+		url := "https://api.expediapartnercentral.com/supply/experience/gateway/graphql"
+		var reqBody GetExpediaReservationsAPIRequestBody
+		reqBody.Query = fmt.Sprintf("query getReservationsBySearchCriteria {reservationSearchV2(input: {propertyId: %s, booked: true, bookingItemId: null, canceled: true, confirmationNumber: null, confirmed: true, startDate: \"%s\", endDate: \"%s\", dateType: \"checkOut\", evc: false, expediaCollect: true, timezoneOffset: \"+08:00\", firstName: null, hotelCollect: true, isSpecialRequest: false, isVIPBooking: false, lastName: null, reconciled: false, readyToReconcile: false, returnBookingItemIDsOnly: false, searchParam: null, unconfirmed: true searchForCancelWaiversOnly: false }) { reservationItems{ reservationItemId reservationInfo {reservationTpid propertyId startDate endDate createDateTime brandDisplayName newReservationItemId country reservationAttributes {businessModel bookingStatus fraudCancelled fraudReleased stayStatus eligibleForECNoShowAndCancel strongCustomerAuthentication} specialRequestDetails accessibilityRequestDetails product {productTypeId unitName bedTypeName propertyVipStatus} customerArrivalTime {arrival}readyToReconcile epsBooking } customer {id guestName phoneNumber email emailAlias country} loyaltyInfo {loyaltyStatus vipAmenities} confirmationInfo {productConfirmationCode} conversationsInfo {conversationsSupported id unreadMessageCount conversationStatus cpcePartnerId}totalAmounts {totalAmountForPartners {value currencyCode}totalCommissionAmount {value currencyCode}totalReservationAmount {value currencyCode}propertyBookingTotal {value currencyCode}totalReservationAmountInPartnerCurrency {value currencyCode}}reservationActions {requestToCancel {reason actionSupported actionUnsupportedBehavior {hide disable}}changeStayDates {reason actionSupported}requestRelocation {reason actionSupported}actionAttributes {highFence}reconciliationActions {markAsNoShow {reason actionSupported actionUnsupportedBehavior {hide disable openVa}virtualAgentParameters {intentName taxonomyId}}undoMarkNoShow {reason actionSupported actionUnsupportedBehavior {hide disable}}changeCancellationFee {reason actionSupported actionUnsupportedBehavior {hide disable}}resetCancellationFee {reason actionSupported actionUnsupportedBehavior {hide disable}}markAsCancellation {reason actionSupported actionUnsupportedBehavior {hide disable}}undoMarkAsCancellation {reason actionSupported actionUnsupportedBehavior {hide disable}}changeReservationAmountsOrDates {reason actionSupported actionUnsupportedBehavior {hide disable}}resetReservationAmountsOrDates {reason actionSupported actionUnsupportedBehavior {hide disable}}}}reconciliationInfo {reconciliationDateTime reconciliationType}paymentInfo {evcCardDetailsExist expediaVirtualCardResourceId creditCardDetails { viewable viewCountLimit viewCountLeft viewCount hideCvvFromDisplay valid prevalidateCardOptIn cardValidationViewable inViewingWindow validationInfo {validationStatus validationType validationDate validationBy hasGuestProvidedNewCC newCreditCardReceivedDate is24HoursFromLastValidation } }}billingInfo {invoiceNumber }cancellationInfo {cancelDateTime cancellationPolicy {priceCurrencyCode costCurrencyCode policyType cancellationPenalties {penaltyCost penaltyPrice penaltyPerStayFee penaltyTime penaltyInterval penaltyStartHour penaltyEndHour }nonrefundableDatesList}}compensationDetails {reservationWaiverType reservationFeeAmounts {propertyWaivedFeeLineItem {costCurrency costAmount }}} searchWaiverRequest {serviceRequestId type typeDetails state orderNumber partnerId createdDate srConversationId lastUpdatedDate notes {text author {firstName lastName }}}} numOfCancelWaivers}}", hotelId, dateFrom, dateTo)
+		jsonReqBody, _ := json.Marshal(reqBody)
 
-		var resultData []ReservationsDB
-		var ordersData GetAgodaOrderResponseBody
-
-		startDateTime, _ := time.Parse("2006-01-02", dateFrom)
-		endDateTime, _ := time.Parse("2006-01-02", dateTo)
-
-		startDateUnixTime := startDateTime.UnixMilli()
-		endDateUnixTime := endDateTime.UnixMilli()
-
-		if err := PostForAgodaReservations(url, startDateUnixTime, endDateUnixTime, cookie, &ordersData); err != nil {
+		var ordersData GetExpediaReservationsResponseBody
+		// err := json.Unmarshal([]byte(result), &ordersData)
+		// if err != nil {
+		// 	fmt.Println("JSON解碼錯誤:", err)
+		// 	return
+		// }
+		if err := DoRequestAndGetResponse_expedia("POST", url, bytes.NewBuffer(jsonReqBody), cookie, &ordersData); err != nil {
+			fmt.Println("123err:", err)
 			return
 		}
+		fmt.Println("ordersData", ordersData)
 
-		wg := new(sync.WaitGroup)
+		var resultData []ReservationsDB
 
-		for _, reservation := range ordersData.Bookings {
-			checkOutDate, _ := time.Parse("2006-01-02", strings.Split(reservation.CheckOutDate, "T")[0])
+		for _, reservation := range ordersData.Data.ReservationSearchV2.ReservationItems {
+			var data ReservationsDB
+			data.GuestName = reservation.Customer.GuestName
+			data.Platform = "Expedia"
+			data.CheckInDate = reservation.ReservationInfo.StartDate
+			data.CheckOutDate = reservation.ReservationInfo.EndDate
+			data.BookDate = reservation.ReservationInfo.CreateDateTime
+			data.RoomType = reservation.ReservationInfo.Product.UnitName
+			data.Price = reservation.TotalAmounts.TotalAmountForPartners.Value
+			data.Commission = 0
+			data.BookingId = reservation.ReservationItemID
 
-			// check_out_date out of range.
-			if checkOutDate.Before(startDateTime) || checkOutDate.After(endDateTime) {
-				continue
+			originalStatus := reservation.ReservationInfo.ReservationAttributes.StayStatus
+			if originalStatus == "postStay" {
+				data.ReservationStatus = "已成立"
+			} else if originalStatus == "cancelled" {
+				data.ReservationStatus = "已取消"
+				if data.Price != 0 {
+					data.ReservationStatus = "Chargeable cancellation"
+				}
+			} else if originalStatus == "markedAsNoShow" {
+				data.ReservationStatus = "已取消"
+				if data.Price != 0 {
+					data.ReservationStatus = "Chargeable no show"
+				}
+			} else {
+				data.ReservationStatus = originalStatus
 			}
 
-			// If valid, do a API call.
-			postUrl := fmt.Sprintf("https://ycs.agoda.com/en-us/%s/kipp/api/hotelBookingApi/GetDetails", hotelId)
-
-			wg.Add(1)
-
-			var resultDetail GetAgodaOrderDetailsResponseBody
-			if err := PostForAgodaReservationsDetails(postUrl, reservation.BookingID, cookie, &resultDetail, wg); err != nil {
-				fmt.Println("PostForReservationsDetails failed!")
-				return
+			startDate, _ := time.Parse("2006-01-02", reservation.ReservationInfo.StartDate)
+			endDate, _ := time.Parse("2006-01-02", reservation.ReservationInfo.EndDate)
+			roomNights := 0
+			for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
+				roomNights += 1
 			}
+			data.RoomNights = int64(roomNights) - 1
 
-			wg.Add(1)
+			data.HotelId = hotelId
 
-			defer timeTrack(time.Now(), "ArrangeReservationData")
-			defer wg.Done()
-
-			var arrangedData ReservationsDB
-
-			arrangedData.Platform = "Agoda"
-			arrangedData.BookingId = strconv.Itoa(int(reservation.BookingID))
-			arrangedData.GuestName = reservation.GuestName
-			arrangedData.NumOfGuests = reservation.Adults + reservation.Children
-			arrangedData.HotelId = hotelId
-
-			for _, bookingDetail := range resultDetail.Data {
-
-				bookingDateStr, _ := time.Parse("2006-01-02", strings.Split(bookingDetail.APIData.BookingDate, "T")[0])
-				arrangedData.BookDate = bookingDateStr.Format("2006-01-02")
-				checkInDateStr, _ := time.Parse("2006-01-02", strings.Split(bookingDetail.APIData.CheckInDate, "T")[0])
-				arrangedData.CheckInDate = checkInDateStr.Format("2006-01-02")
-				checkOutDateStr, _ := time.Parse("2006-01-02", strings.Split(bookingDetail.APIData.CheckOutDate, "T")[0])
-				arrangedData.CheckOutDate = checkOutDateStr.Format("2006-01-02")
-
-				arrangedData.NumOfRooms = bookingDetail.APIData.NoOfRoom
-				arrangedData.Price = bookingDetail.APIData.RateDetailList.TotalNetInclusive
-				arrangedData.Currency = bookingDetail.APIData.RateDetailList.Currency
-
-				originalStatus := bookingDetail.APIData.AckRequestType
-				fmt.Println("originalStatus", originalStatus)
-				if originalStatus == 1 || originalStatus == 3 {
-					arrangedData.ReservationStatus = "已成立"
-				} else if originalStatus == 2 {
-					arrangedData.ReservationStatus = "已取消"
-					if bookingDetail.APIData.RateDetailList.TotalNetInclusive != 0 {
-						arrangedData.ReservationStatus = "Chargeable cancellation"
-					}
-				} else {
-					stringValue := strconv.FormatInt(bookingDetail.APIData.AckRequestType, 10)
-					arrangedData.ReservationStatus = stringValue
-				}
-
-				start, _ := time.Parse("2006-01-02", arrangedData.CheckInDate)
-				end, _ := time.Parse("2006-01-02", arrangedData.CheckOutDate)
-
-				roomNights := 0
-				for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
-					roomNights += 1
-				}
-				arrangedData.RoomNights = int64(roomNights) - 1
-
-				messages := ""
-
-				for _, message := range bookingDetail.APIData.MessageList {
-					messages = messages + message.MessageProperty + "\n"
-				}
-				arrangedData.GuestRequest = messages
-			}
-			resultData = append(resultData, arrangedData)
+			resultData = append(resultData, data)
 		}
 
 		fmt.Println("resultData", resultData)
@@ -155,4 +173,30 @@ func GetExpedia(platform map[string]interface{}, dateFrom, dateTo string) {
 			}
 		}
 	}
+}
+
+func DoRequestAndGetResponse_expedia(method string, url string, reqBody io.Reader, cookie string, resBody interface{}) error {
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", " ")
+	req.Header.Set("Cookie", cookie)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Client-Name", "pc-reservations-web")
+
+	client := &http.Client{Timeout: 20 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	data, _ := io.ReadAll(resp.Body)
+	if err := json.Unmarshal(data, resBody); err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	return nil
 }
