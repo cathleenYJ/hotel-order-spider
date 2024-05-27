@@ -208,7 +208,7 @@ func GetOwlting(platform map[string]interface{}, dateFrom, dateTo string) {
 			data.Currency = "TWD"
 			data.HotelId = batchid
 
-			if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "CTrip" && data.Platform != "Expedia" && data.Platform != "Hostelworld" && data.Platform != "SiteMinder" && data.Platform != "manual" {
+			if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "CTrip" && data.Platform != "Expedia" && data.Platform != "Hostelworld" && data.Platform != "SiteMinder" && data.Platform != "manual" && data.Platform != "Airbnb" {
 				resultData = append(resultData, data)
 			}
 		}

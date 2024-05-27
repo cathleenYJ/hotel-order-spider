@@ -30,21 +30,22 @@ type ReservationsDB struct {
 
 func main() {
 	configFiles := []string{
-		"./config/config_agoda.yaml",
+		// "./config/config_newSIM.yaml",
+		// "./config/config_oldSIM.yaml",
+		// "./config/config_agoda.yaml",
+		// "./config/config_expedia.yaml",
+		// "./config/config_mastri.yaml",
+		// "./config/config_owlting.yaml",
+		// "./config/config_airbnb.yaml",
+		// "./config/config_ctrip.yaml",
 		"./config/config_booking.yaml",
-		"./config/config_ctrip.yaml",
-		"./config/config_expedia.yaml",
-		"./config/config_mastri.yaml",
-		"./config/config_newSIM.yaml",
-		"./config/config_oldSIM.yaml",
-		"./config/config_owlting.yaml",
 		// "./config/config_hostelworld.yaml",
 		// "./config/config_traiwan.yaml",
 	}
 
 	for _, configFile := range configFiles {
 		// 執行兩次
-		for i := 0; i < 2; i++ {
+		for i := 0; i < 1; i++ {
 			fmt.Println("-----第 ", i+1, " 次----- ")
 
 			viper.SetConfigFile(configFile)
@@ -149,6 +150,10 @@ func main() {
 
 						if platformName == "MastriPMS" {
 							getOrders.GetMastri(platform, dateFrom, dateTo)
+						}
+
+						if platformName == "Airbnb" {
+							getOrders.GetAirbnb(platform, dateFrom, dateTo)
 						}
 
 					}
