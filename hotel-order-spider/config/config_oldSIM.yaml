@@ -1,4 +1,4 @@
-period: "2024-04"
+period: "2024-06"
 account:
   - name: "mrhost"
     platform:
@@ -6,16 +6,3 @@ account:
         cookie: "JSESSIONID=CA3077D7FFFE1CFC409263D65FA73213.8fb2adfe320e8d8a582ca7d67c9db204ce8745b2; optVal=9; mutiny.user.token=9e8f1d63-d239-4cd9-9365-1d5d1b8265d7; sm_referral=https://www.google.com/; _gcl_au=1.1.623003328.1709785208; _mkto_trk=id:994-UJA-976&token:_mch-siteminder.com-1709785209109-13065; _fbp=fb.1.1709785209690.1837657961; intercom-id-persi442=bf3577bc-5b06-4c49-b9bb-bcbde1c03069; intercom-device-id-persi442=183c92dc-6480-4903-8c3e-e101c8bc25a6; _hjSessionUser_1151086=eyJpZCI6IjlkNjE4ZGY5LTQxODMtNWNmMi1hZTlmLTU2N2ExYmYwNjlmOCIsImNyZWF0ZWQiOjE3MDk3ODU4NDQzMTQsImV4aXN0aW5nIjp0cnVlfQ==; _hjSessionUser_1029327=eyJpZCI6IjY3MWQ5ZThkLTFhM2MtNWY2ZS1hMTM2LTFlNzkxNzEyNzkyNSIsImNyZWF0ZWQiOjE3MDk3ODYzNDE5OTUsImV4aXN0aW5nIjp0cnVlfQ==; _uetvid=fc483ad0dc3911eeb089eb9a6b3f5696; _hjSessionUser_43689=eyJpZCI6IjVjMzc1M2U3LTE3YjItNTgzNC04NGQwLTRlZTNjMTY0YWJkYyIsImNyZWF0ZWQiOjE3MDk3ODUyMTA0MTgsImV4aXN0aW5nIjp0cnVlfQ==; _clck=1qde1h1%7C2%7Cfjz%7C0%7C1527; _ga_53XME7DYQN=GS1.1.1710129507.2.0.1710129509.58.0.0; _hjSessionUser_1565101=eyJpZCI6Ijk2YTk1NDNmLTA2MmMtNTgxMy05MGFhLWQxYzI1M2Q3YTdkMiIsImNyZWF0ZWQiOjE3MDk3ODU1NDc4NzYsImV4aXN0aW5nIjp0cnVlfQ==; _gid=GA1.2.486617465.1714531617; _ga_JXEGQMK3YW=GS1.1.1714531616.9.1.1714531688.55.0.0; _hjSession_1151086=eyJpZCI6IjkyYjhjYzQzLWM3OTEtNDU1Ni04Mjg5LTU5MjBkNGQ1M2E0NSIsImMiOjE3MTQ1Mzg0OTg1NjcsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=; _hp2_ses_props.1527560549=%7B%22ts%22%3A1714538500028%2C%22d%22%3A%22platform.siteminder.com%22%2C%22h%22%3A%22%2Fproperties%2Fa60f8bab-6ed1-40fe-a485-a3a63e3ea45f%2Freservations%2Fsearch%22%7D; _ga=GA1.2.2134035018.1709785208; _hjSession_1565101=eyJpZCI6ImFlMTZlZDYyLTcwNDUtNDlkZC1hZDdmLTQxYjc3ZjVjMDYzNCIsImMiOjE3MTQ1Mzg1MDg3MzAsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=; _ga_CGX06XN0WM=GS1.1.1714538508.8.0.1714538512.56.0.0; _hp2_props.1527560549=%7B%22product_code%22%3A%22cm%22%2C%22nxs_property_id%22%3A%22b46ff2ed-0e81-45d6-b68f-1e7021c575b1%22%7D; _hp2_id.1527560549=%7B%22userId%22%3A%228070756661837196%22%2C%22pageviewId%22%3A%225993594181674410%22%2C%22sessionId%22%3A%226656806846740528%22%2C%22identity%22%3A%229cecdc9e-22f1-4a3c-89f1-679870cb240c%22%2C%22trackerVersion%22%3A%224.0%22%2C%22identityField%22%3Anull%2C%22isIdentified%22%3A1%7D; intercom-session-persi442=V2JkSzE0OHJGV1lJdWtFcUFGSTlRSW5ack9YZUZVS0NLdEFYMHdxWE1ZcGZJa3BWMm1UaXFmeUcrOHgyR2NiRS0temkvbkxUZDRTYmpSYVNReFJTWmEvQT09--2f28bbb8a1caed4b965d70b1a8992f19e925fe78"
         x_xsrf_token: "7b97b2b8-9ed1-49f5-8e50-ed0c6dc8a187"
         x_xsrf_token_url: "/web/extranet/hoteliers/b46ff2ed-0e81-45d6-b68f-1e7021c575b1/reservation-search"
-        hotel:
-          - name: "北門窩泊旅"
-            hotelid: "17966"
-          - name: "台北西門窩青年旅館"
-            hotelid: "39951"
-          - name: "府城窩旅"
-            hotelid: "37978"
-          - name: "洄瀾窩青年旅舍"
-            hotelid: "14696"
-          - name: "三德大飯店"
-            hotelid: "39877"
-          - name: "CHECK inn Phnom Penh BKK1"
-            hotelid: "41419"

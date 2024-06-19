@@ -1,9 +1,9 @@
-period: "2024-04"
+period: "2024-06"
 account:
   - name: "mrhost"
     platform:
       - name: "Ctrip"
-        cookie: "EBK_CurrentLocale=zh-TW; CurrentLanguage=TraditionalChineseTW; GUID=09031043311840621561; UBT_VID=1710388272093.940b2eHguev6; _RF1=124.9.5.130; _RSG=v1KlZ8TFXq0bU9zVprNjX9; _RDG=2862618807d7782a5c0811bfebc6135982; _RGUID=0d213dd2-23bd-4079-986d-5f5cdff497a5; OrderCount=6; ibulanguage=CN; ibulocale=zh_cn; cookiePricesDisplayed=CNY; Session=smartlinkcode=U135371&smartlinklanguage=zh&SmartLinkKeyWord=&SmartLinkQuary=&SmartLinkHost=; Union=AllianceID=4899&SID=135371&OUID=&createtime=1714532684&Expires=1715137483893; imislogin=9917687^1; librauuid=; randomkey=55a134c0-7a2f-4738-a2cb-8fb7a47bf177; usertoken=55a134c0-7a2f-4738-a2cb-8fb7a47bf177; usersign=ebk_token_rZqQSl8VNPFPvrHY8tM2RiiEObZXF5S4JLwH/qOruj7vPfIuzjJb2+rtpqgqjJCGvOb0WDiksQAHIeGqcN4XPlJy/YZEp79csfCwYzo2H6ZH0L0m2clTCbEnDOlUx/Uf1ufiM5N/TQe2wIdQFoVIFoMwb9bbrgr6GJ0VMUuVxv4WhDC5/butQx0h2dKwThfMafA7xuzMKk4gLie0/zsAcViXnXebazJy5XcPHUSzbnhcK1HpdHGO4donFhYYC6ctpRD4tEzHqzVkv5MsFdjxkpIHZaNNQ0lQp7NStRuBqGbJspPl9uDswJLNHWRDxMi6; logintype=1; _bfa=1.1710388272093.940b2eHguev6.1.1714533155722.1714533158159.8.47.10650101018"
+        cookie: "EBK_CurrentLocale=zh-TW; CurrentLanguage=TraditionalChineseTW; GUID=09031043311840621561; UBT_VID=1710388272093.940b2eHguev6; _RF1=124.9.5.130; _RSG=v1KlZ8TFXq0bU9zVprNjX9; _RDG=2862618807d7782a5c0811bfebc6135982; _RGUID=0d213dd2-23bd-4079-986d-5f5cdff497a5; userRoleNew_8871149=director; userRoleNew_10139731=director; OrderCount=9; Session=smartlinkcode=U135371&smartlinklanguage=zh&SmartLinkKeyWord=&SmartLinkQuary=&SmartLinkHost=; Union=AllianceID=4899&SID=135371&OUID=&createtime=1716957226&Expires=1717562025845; imislogin=10139731^1; librauuid=; hotelhst=1164390341; randomkey=96f1d035-5a41-4cf0-b86f-37e40495a7de; usertoken=96f1d035-5a41-4cf0-b86f-37e40495a7de; usersign=ebk_token_rZqQSl8VNPFPvrHY8tM2RiiEObZXF5S4JLwH/qOruj7vPfIuzjJb2+rtpqgqjJCGvOb0WDiksQAHIeGqcN4XPlJy/YZEp79csfCwYzo2H6ZH0L0m2clTCbEnDOlUx/Uf1ufiM5N/TQe2wIdQFoVIFmkW6DDDu+k8HzkqcPpVMo4J/evG2HZjn0NWVAGESgWRafA7xuzMKk4gLie0/zsAcViXnXebazJy5XcPHUSzbngnFtqwo3LIqsqUJPVDB2yvIVkhVIrFTB2258+r4ncrqcupACtuwFvHAwJa4bji693akh+IOeR51VqGWgSemyu8; logintype=1; _bfa=1.1710388272093.940b2eHguev6.1.1716957390347.1716957393201.9.31.10650101018"
         hotel:
           - name: "北門窩泊旅"
             hotelid: "6532235"
@@ -27,8 +27,8 @@ account:
             hotelid: "5338513"
             hotelid_pre: "2592723"
             masterhotelid: "6083160"
-            batchid: "9251151"
-            token: "F6658F26E24E1D8A4AEED0D24D51AC2F"
+            batchid: "9329645"
+            token: "181A8D7A7C4CA00CEFDE2A32A56C2CE2"
           - name: "三德大飯店"
             hotelid: ""
             hotelid_pre: "6283696" #特例:現付帳號但要在預付中查看訂單
@@ -131,11 +131,16 @@ account:
             masterhotelid: "18041556"
             batchid: ""
             token: ""
-
+          - name: "逢甲二五行館"
+            hotelid: "114242053"
+            hotelid_pre: "114242056"
+            masterhotelid: ""
+            batchid: ""
+            token: ""
   - name: "敦謙"
     platform:
       - name: "Ctrip"
-        cookie: "EBK_CurrentLocale=zh-TW; CurrentLanguage=TraditionalChineseTW; GUID=09031043311840621561; UBT_VID=1710388272093.940b2eHguev6; _RF1=124.9.5.130; _RSG=v1KlZ8TFXq0bU9zVprNjX9; _RDG=2862618807d7782a5c0811bfebc6135982; _RGUID=0d213dd2-23bd-4079-986d-5f5cdff497a5; OrderCount=6; ibulanguage=CN; ibulocale=zh_cn; cookiePricesDisplayed=CNY; randomkey=359a0d39-7370-4fea-b451-e5a0e07973d0; usertoken=359a0d39-7370-4fea-b451-e5a0e07973d0; usersign=ebk_token_rZqQSl8VNPFPvrHY8tM2RiiEObZXF5S4JLwH/qOruj7vPfIuzjJb2+rtpqgqjJCGvOb0WDiksQAHIeGqcN4XPlJy/YZEp79csfCwYzo2H6ZH0L0m2clTCbEnDOlUx/UfE8U6W7PqTtOWkZlU8GcNPKNYtC9gwHfWcYSb1t5skw2xQx7yG3kt9igspwR2Bx0sM1sQO4dBfk2AQfmWtRzCQFp7+Ng6EV//i/I9rtk/XiRto/O7z66ubu4vkEL9W3tk3m4Rnb+jdYri7RP033SWvqLR7Ec2Sk1JjfRr8oJc/yAERds358mtQ+bQ29hPTHHT; logintype=1; Session=smartlinkcode=U135371&smartlinklanguage=zh&SmartLinkKeyWord=&SmartLinkQuary=&SmartLinkHost=; Union=AllianceID=4899&SID=135371&OUID=&createtime=1714532684&Expires=1715137483893; imislogin=9917687^1; librauuid=; _bfa=1.1710388272093.940b2eHguev6.1.1714533022021.1714533025404.8.40.10650101018"
+        cookie: "EBK_CurrentLocale=zh-TW; CurrentLanguage=TraditionalChineseTW; GUID=09031043311840621561; UBT_VID=1710388272093.940b2eHguev6; _RF1=124.9.5.130; _RSG=v1KlZ8TFXq0bU9zVprNjX9; _RDG=2862618807d7782a5c0811bfebc6135982; _RGUID=0d213dd2-23bd-4079-986d-5f5cdff497a5; userRoleNew_8871149=director; userRoleNew_10139731=director; OrderCount=9; Session=smartlinkcode=U135371&smartlinklanguage=zh&SmartLinkKeyWord=&SmartLinkQuary=&SmartLinkHost=; Union=AllianceID=4899&SID=135371&OUID=&createtime=1716957226&Expires=1717562025845; imislogin=10139731^1; librauuid=; randomkey=7a177b04-4ff0-4510-8655-b5e338e74d3b; usertoken=7a177b04-4ff0-4510-8655-b5e338e74d3b; usersign=ebk_token_rZqQSl8VNPFPvrHY8tM2RiiEObZXF5S4JLwH/qOruj7vPfIuzjJb2+rtpqgqjJCGvOb0WDiksQAHIeGqcN4XPlJy/YZEp79csfCwYzo2H6ZH0L0m2clTCbEnDOlUx/UfE8U6W7PqTtOWkZlU8GcNPNDZHWnrZz3Ron9c8A89CECo7AYQizmuiQ8jKy8EZz0wM1sQO4dBfk2AQfmWtRzCQFp7+Ng6EV//i/I9rtk/XiRebTBOMxLCe4M3R4iS5qBi2mXwukUmujGvVi1PaUS9G0NwY2zytVbv9eUDvvd/k4DHQEozonj4KIvM8ZHTVCRg; logintype=1; _bfa=1.1710388272093.940b2eHguev6.1.1716957446875.1716957450706.9.38.10650101018"
         hotel:
           - name: "	CHECK inn Phnom Penh BKK1"
             hotelid: ""
@@ -159,8 +164,8 @@ account:
             hotelid: "16159276"
             hotelid_pre: ""
             masterhotelid: "16159275"
-            batchid: "9258868"
-            token: "B5A171EF3EA656109E2E9B5630D441A9"
+            batchid: "9310184"
+            token: "7F3B303317F966D6FEA6CAF70EA954FB"
           - name: "承攜行旅台北大稻埕館"
             hotelid: "5915987"
             hotelid_pre: ""
@@ -171,8 +176,8 @@ account:
             hotelid: "52179858"
             hotelid_pre: ""
             masterhotelid: "41900364"
-            batchid: "9245862"
-            token: "5715DC96370BDF35C1126BB81C2500EA"
+            batchid: "9313569"
+            token: "CE6F2C6FD4A1B46F30EC1C77608C1537"
 
   - name: "上海雀の花园民宿"
     platform:

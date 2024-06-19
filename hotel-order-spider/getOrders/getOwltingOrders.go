@@ -62,7 +62,7 @@ type RoomInfo_owl struct {
 	Count    int
 }
 
-func GetOwlting(platform map[string]interface{}, dateFrom, dateTo string) {
+func GetOwlting(platform map[string]interface{}, dateFrom, dateTo, owltingAccommodationId string) {
 	var result string
 	var url string
 
@@ -70,167 +70,142 @@ func GetOwlting(platform map[string]interface{}, dateFrom, dateTo string) {
 	if !ok {
 		fmt.Println("無法取得 cookie")
 	}
-	hotels, ok := platform["hotel"].([]interface{})
-	if !ok || hotels == nil {
-		fmt.Println("無法取得 hotel")
+
+	url = `https://www.owlting.com/booking/v2/admin/hotels/` + owltingAccommodationId + `/orders/calendar_list?lang=zh_TW&limit=1000&page=1&during_checkout_date=` + dateFrom + `,` + dateTo + `&order_by=id&sort_by=asc`
+
+	fmt.Println("1.")
+	if err := DoRequestAndGetResponse_owl("GET", url, http.NoBody, cookie, &result); err != nil {
+		fmt.Println("DoRequestAndGetResponse failed!")
+		fmt.Println("err", err)
+		return
 	}
 
-	for _, hotelRaw := range hotels {
-		hotel, ok := hotelRaw.(map[string]interface{})
-		if !ok || hotel == nil {
-			fmt.Println("無法取得 hotel")
-			continue
-		}
+	var ordersData GetOwltingOrderResponseBody
+	err := json.Unmarshal([]byte(result), &ordersData)
+	if err != nil {
+		fmt.Println("JSON解碼錯誤:", err)
+		return
+	}
+	pageCount := ordersData.Pagination.Total_pages
+	fmt.Println("pageCount:", pageCount)
 
-		hotelName, ok := hotel["name"].(string)
-		if !ok {
-			fmt.Println("無法取得 hotel name")
-			continue
-		}
-		fmt.Println("hotelName", hotelName)
+	var resultData []ReservationsDB
+	var data ReservationsDB
 
-		batchid, ok := hotel["batchid"].(string)
-		if !ok {
-			fmt.Println("無法取得 batch id")
-			continue
-		}
+	for _, reservation := range ordersData.Data {
+		url = `https://www.owlting.com/booking/v2/admin/hotels/` + owltingAccommodationId + `/orders/` + reservation.Order_serial + `/detail?lang=zh_TW`
 
-		url = `https://www.owlting.com/booking/v2/admin/hotels/` + batchid + `/orders/calendar_list?lang=zh_TW&limit=1000&page=1&during_checkout_date=` + dateFrom + `,` + dateTo + `&order_by=id&sort_by=asc`
-
-		fmt.Println("1.")
 		if err := DoRequestAndGetResponse_owl("GET", url, http.NoBody, cookie, &result); err != nil {
 			fmt.Println("DoRequestAndGetResponse failed!")
 			fmt.Println("err", err)
 			return
 		}
 
-		var ordersData GetOwltingOrderResponseBody
-		err := json.Unmarshal([]byte(result), &ordersData)
+		var orderData GetOwltingOrderResponseBody2
+		err = json.Unmarshal([]byte(result), &orderData)
 		if err != nil {
 			fmt.Println("JSON解碼錯誤:", err)
 			return
 		}
-		pageCount := ordersData.Pagination.Total_pages
-		fmt.Println("pageCount:", pageCount)
 
-		var resultData []ReservationsDB
-		var data ReservationsDB
+		data.RoomNights = int64(orderData.Data.Info.Order_stay_night)
 
-		for _, reservation := range ordersData.Data {
-			url = `https://www.owlting.com/booking/v2/admin/hotels/` + batchid + `/orders/` + reservation.Order_serial + `/detail?lang=zh_TW`
+		roomInfoData := make(map[string]*RoomInfo_owl)
+		for _, roomReservation := range orderData.Data.Rooms {
+			roomType := roomReservation.Room_name
 
-			if err := DoRequestAndGetResponse_owl("GET", url, http.NoBody, cookie, &result); err != nil {
-				fmt.Println("DoRequestAndGetResponse failed!")
-				fmt.Println("err", err)
-				return
-			}
-
-			var orderData GetOwltingOrderResponseBody2
-			err = json.Unmarshal([]byte(result), &orderData)
-			if err != nil {
-				fmt.Println("JSON解碼錯誤:", err)
-				return
-			}
-
-			data.RoomNights = int64(orderData.Data.Info.Order_stay_night)
-
-			roomInfoData := make(map[string]*RoomInfo_owl)
-			for _, roomReservation := range orderData.Data.Rooms {
-				roomType := roomReservation.Room_name
-
-				roomInfo, ok := roomInfoData[roomType]
-				if !ok {
-					roomInfo = &RoomInfo_owl{
-						RoomType: roomType,
-						Count:    1,
-					}
-					roomInfoData[roomType] = roomInfo
-				} else {
-					roomInfo.Count++
+			roomInfo, ok := roomInfoData[roomType]
+			if !ok {
+				roomInfo = &RoomInfo_owl{
+					RoomType: roomType,
+					Count:    1,
 				}
-			}
-			var combinedRoomInfo string
-			for _, roomInfo := range roomInfoData {
-				if combinedRoomInfo != "" {
-					combinedRoomInfo += " + "
-				}
-
-				combinedRoomInfo += fmt.Sprintf("%s*%s", roomInfo.RoomType, strconv.Itoa(roomInfo.Count/int(orderData.Data.Info.Order_stay_night)))
-			}
-
-			data.BookingId = orderData.Data.Info.Order_serial
-
-			data.GuestName = orderData.Data.Info.Orderer_fullname
-
-			arrivalTime, err := time.Parse("2006-01-02", orderData.Data.Info.Sdate)
-			if err != nil {
-				fmt.Println("Error parsing arrival time:", err)
-			}
-
-			departureTime, err := time.Parse("2006-01-02", orderData.Data.Info.Edate)
-			if err != nil {
-				fmt.Println("Error parsing arrival time:", err)
-			}
-
-			parsedTime, err := time.Parse(time.RFC3339, orderData.Data.First_payment.Created_at)
-			if err != nil {
-				fmt.Println("Error parsing time:", err)
-				return
-			}
-
-			resultTimeStr := parsedTime.Format("2006-01-02")
-			data.BookDate = resultTimeStr
-
-			checkOutTime := departureTime
-			checkInTime := arrivalTime
-			data.CheckOutDate = checkOutTime.Format("2006-01-02")
-			data.CheckInDate = checkInTime.Format("2006-01-02")
-
-			data.Price = float64(orderData.Data.Summary.Hotel.Receivable_total)
-			if data.Price == 0 {
-				data.Price = float64(orderData.Data.Summary.Hotel.Paid_total)
-			}
-
-			if orderData.Data.Info.Order_status == "fail_pay" || orderData.Data.Info.Order_status == "cancel" {
-				data.ReservationStatus = "已取消"
-
+				roomInfoData[roomType] = roomInfo
 			} else {
-				data.ReservationStatus = "已成立"
-			}
-
-			if orderData.Data.Info.Source == "" {
-				data.Platform = orderData.Data.Info.Source2
-
-			} else {
-				data.Platform = orderData.Data.Info.Source
-			}
-
-			data.Currency = "TWD"
-			data.HotelId = batchid
-
-			if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "CTrip" && data.Platform != "Expedia" && data.Platform != "Hostelworld" && data.Platform != "SiteMinder" && data.Platform != "manual" && data.Platform != "Airbnb" {
-				resultData = append(resultData, data)
+				roomInfo.Count++
 			}
 		}
-		fmt.Println("resultdata", resultData)
+		var combinedRoomInfo string
+		for _, roomInfo := range roomInfoData {
+			if combinedRoomInfo != "" {
+				combinedRoomInfo += " + "
+			}
 
-		fmt.Println(resultData)
+			combinedRoomInfo += fmt.Sprintf("%s*%s", roomInfo.RoomType, strconv.Itoa(roomInfo.Count/int(orderData.Data.Info.Order_stay_night)))
+		}
 
-		resultDataJSON, err := json.Marshal(resultData)
+		data.BookingId = orderData.Data.Info.Order_serial
+
+		data.GuestName = orderData.Data.Info.Orderer_fullname
+
+		arrivalTime, err := time.Parse("2006-01-02", orderData.Data.Info.Sdate)
 		if err != nil {
-			fmt.Println("JSON 轉換錯誤:", err)
+			fmt.Println("Error parsing arrival time:", err)
+		}
+
+		departureTime, err := time.Parse("2006-01-02", orderData.Data.Info.Edate)
+		if err != nil {
+			fmt.Println("Error parsing arrival time:", err)
+		}
+
+		parsedTime, err := time.Parse(time.RFC3339, orderData.Data.First_payment.Created_at)
+		if err != nil {
+			fmt.Println("Error parsing time:", err)
 			return
 		}
 
-		var resultDB string
-		// 將資料存入DB
-		apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
-		if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
-			fmt.Println("setParseHtmlToDB failed!")
-			return
+		resultTimeStr := parsedTime.Format("2006-01-02")
+		data.BookDate = resultTimeStr
+
+		checkOutTime := departureTime
+		checkInTime := arrivalTime
+		data.CheckOutDate = checkOutTime.Format("2006-01-02")
+		data.CheckInDate = checkInTime.Format("2006-01-02")
+
+		data.Price = float64(orderData.Data.Summary.Hotel.Receivable_total)
+		if data.Price == 0 {
+			data.Price = float64(orderData.Data.Summary.Hotel.Paid_total)
 		}
 
+		if orderData.Data.Info.Order_status == "fail_pay" || orderData.Data.Info.Order_status == "cancel" {
+			data.ReservationStatus = "已取消"
+
+		} else {
+			data.ReservationStatus = "已成立"
+		}
+
+		if orderData.Data.Info.Source == "" {
+			data.Platform = orderData.Data.Info.Source2
+
+		} else {
+			data.Platform = orderData.Data.Info.Source
+		}
+
+		data.Currency = "TWD"
+		data.HotelId = owltingAccommodationId
+
+		if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "CTrip" && data.Platform != "Expedia" && data.Platform != "Hostelworld" && data.Platform != "SiteMinder" && data.Platform != "manual" && data.Platform != "Airbnb" {
+			resultData = append(resultData, data)
+		}
 	}
+	fmt.Println("resultdata", resultData)
+
+	fmt.Println(resultData)
+
+	resultDataJSON, err := json.Marshal(resultData)
+	if err != nil {
+		fmt.Println("JSON 轉換錯誤:", err)
+		return
+	}
+
+	var resultDB string
+	// 將資料存入DB
+	apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
+	if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
+		fmt.Println("setParseHtmlToDB failed!")
+		return
+	}
+
 }
 
 func DoRequestAndGetResponse_owl(method, postUrl string, reqBody io.Reader, cookie string, resBody any) error {

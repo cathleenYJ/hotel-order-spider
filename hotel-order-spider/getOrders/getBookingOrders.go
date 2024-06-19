@@ -7,11 +7,12 @@ import (
 	"gin/file"
 	"io"
 	"log"
+	"math"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -69,767 +70,441 @@ type GetBookingReservationResponseBody struct {
 				Quantity int64  `json:"quantity"`
 			} `json:"rooms"`
 		} `json:"reservations"`
+		TotalPrice struct {
+			Amount float64 `json:"amount"`
+		} `json:"totalPrice"`
 	} `json:"data"`
 }
 
-func GetBooking(platform map[string]interface{}, platformName, period, dateFrom, dateTo string) {
+type cookieResponse struct {
+	Result []cookieResult `json:"result"`
+}
+
+type cookieResult struct {
+	RoomId string `json:"room_id"`
+}
+
+func GetBooking(platform map[string]interface{}, platformName, period, dateFrom, dateTo, bookingAccommodationId, hotelName, mrhostId string) {
 	var result string
 	var url string
 
 	parse, ok := platform["parse"].(string)
 	if !ok {
-		fmt.Println("無法取得 parse")
+		fmt.Println("!!!!!!!!!!!!")
+		fmt.Println("請輸入 parse")
+		fmt.Println("!!!!!!!!!!!!")
 	}
 
 	cookie, ok := platform["cookie"].(string)
 	if !ok {
-		fmt.Println("無法取得 cookie")
+		fmt.Println("!!!!!!!!!!!!!")
+		fmt.Println("請輸入 cookie")
+		fmt.Println("!!!!!!!!!!!!!")
 	}
 
 	token, ok := platform["token"].(string)
 	if !ok {
+		fmt.Println("!!!!!!!!!!!!!")
 		fmt.Println("無法取得 token")
+		fmt.Println("!!!!!!!!!!!!!")
 	}
 
-	hotels, ok := platform["hotel"].([]interface{})
-	if !ok || hotels == nil {
-		fmt.Println("無法取得 hotel")
+	session := GetBookingSessionID(cookie)
+
+	dateFromTime, err := time.Parse("2006-01-02", dateFrom)
+	if err != nil {
+		fmt.Println("日期解析錯誤:", err)
+		return
 	}
 
-	var wg sync.WaitGroup
-	for _, hotelRaw := range hotels {
-		wg.Add(1)
-		go func(hotelRaw interface{}) {
-			defer wg.Done()
+	dateToTime, err := time.Parse("2006-01-02", dateTo)
+	if err != nil {
+		fmt.Println("日期解析錯誤:", err)
+		return
+	}
 
-			session := GetBookingSessionID(cookie)
-			fmt.Println(session)
+	// 檢查 cookie、token 是否過期
+	reqBody := `{"hotel_id": "5393471","cookie":"` + cookie + `","session":"` + session + `"}`
+	reqData := bytes.NewBufferString(reqBody)
+	var responseData cookieResponse
+	cookieurl := "http://149.28.24.90:8893/revenue_booking/getAllHotelRoomIds"
+	if err := DoRequestAndGetResponse("POST", cookieurl, reqData, "", &responseData); err != nil {
+		fmt.Println("getAllHotelRoomIds failed!", err)
+		return
+	}
 
-			hotel, ok := hotelRaw.(map[string]interface{})
-			if !ok || hotel == nil {
-				fmt.Println("無法取得 hotel")
+	if len(responseData.Result) == 0 {
+		fmt.Println()
+		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+		fmt.Println("! 請更新 cookie、token!")
+		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+		os.Exit(1)
+	}
+
+	fmt.Println()
+	fmt.Println(hotelName, mrhostId, bookingAccommodationId)
+
+	var resultData []ReservationsDB
+	if parse == "API" {
+		for current := dateFromTime; current.Before(dateToTime) || current.Equal(dateToTime); current = current.AddDate(0, 0, 1) {
+			currentDateString := current.Format("2006-01-02")
+			fmt.Println()
+			fmt.Println("............................................................................................................")
+			fmt.Println("Date : ", currentDateString)
+			fmt.Println()
+			url = fmt.Sprintf("https://admin.booking.com/fresa/extranet/reservations/retrieve_list_v2?lang=xt&ses=%s&hotel_id=%s&hotel_account_id=17606105&perpage=1000&page=1&date_type=departure&date_from=%s&date_to=%s&token=%s", session, bookingAccommodationId, currentDateString, currentDateString, token)
+			if err := DoRequestAndGetResponse("POST", url, http.NoBody, cookie, &result); err != nil {
+				fmt.Println("DoRequestAndGetResponse failed!")
+				fmt.Println("err", err)
 				return
 			}
 
-			hotelName, ok := hotel["name"].(string)
-			if !ok {
-				fmt.Println("無法取得 hotel name")
-				return
-			}
-
-			hotelId, ok := hotel["hotelid"].(string)
-			if !ok {
-				fmt.Println("無法取得 hotel id")
-				return
-			}
-
-			fmt.Printf("Hotel Name: %s, Hotel ID: %s\n", hotelName, hotelId)
-
-			dateFromTime, err := time.Parse("2006-01-02", dateFrom)
+			// 解碼JSON
+			var ordersData GetBookingReservationResponseBody
+			err = json.Unmarshal([]byte(result), &ordersData)
 			if err != nil {
-				fmt.Println("日期解析錯誤:", err)
-				return
+				fmt.Println("JSON解碼錯誤:", err)
+				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+				fmt.Println("! 請更新 cookie、token!")
+				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+				os.Exit(1)
 			}
 
-			dateToTime, err := time.Parse("2006-01-02", dateTo)
-			if err != nil {
-				fmt.Println("日期解析錯誤:", err)
-				return
-			}
+			var data ReservationsDB
+			var totalAmount float64
+			var countAmount float64
+			totalAmount = ordersData.Data.TotalPrice.Amount
+			for _, reservation := range ordersData.Data.Reservations {
+				data.BookingId = strconv.FormatInt(reservation.BookingId, 10)
+				data.GuestName = reservation.GuestName
 
-			var resultData []ReservationsDB
+				data.CheckOutDate = reservation.CheckOutDate
+				data.CheckInDate = reservation.CheckInDate
 
-			if parse == "API" {
-				for current := dateFromTime; current.Before(dateToTime) || current.Equal(dateToTime); current = current.AddDate(0, 0, 1) {
-					currentDateString := current.Format("2006-01-02")
-					fmt.Println(hotelName, " 處理日期：", currentDateString)
-					url = fmt.Sprintf("https://admin.booking.com/fresa/extranet/reservations/retrieve_list_v2?lang=xt&ses=%s&hotel_id=%s&hotel_account_id=17606105&perpage=1000&page=1&date_type=departure&date_from=%s&date_to=%s&token=%s", session, hotelId, currentDateString, currentDateString, token)
-					if err := DoRequestAndGetResponse("POST", url, http.NoBody, cookie, &result); err != nil {
-						fmt.Println("DoRequestAndGetResponse failed!")
-						fmt.Println("err", err)
-						return
+				checkInTime, err := time.Parse("2006-01-02", reservation.CheckInDate)
+				if err != nil {
+					fmt.Println("CheckInDate 解析錯誤:", err)
+					return
+				}
+				checkOutTime, err := time.Parse("2006-01-02", reservation.CheckOutDate)
+				if err != nil {
+					fmt.Println("CheckOutDate 解析錯誤:", err)
+					return
+				}
+				duration := checkOutTime.Sub(checkInTime)
+				days := int(duration.Hours() / 24)
+				data.RoomNights = int64(days)
+
+				data.Price = reservation.Price.Amount - reservation.Commission.Original.Amount
+				data.Commission = reservation.Commission.Original.Amount
+				data.ReservationStatus = reservation.ReservationStatus
+				data.Platform = platformName
+				data.Currency = reservation.Price.Currency
+
+				if reservation.Occupancy.NumOfGuest > 0 {
+					data.NumOfGuests = reservation.Occupancy.NumOfGuest
+				} else {
+					data.NumOfGuests = reservation.Occupancy.Adults + reservation.Occupancy.Children
+				}
+
+				data.HotelId = bookingAccommodationId
+
+				if data.ReservationStatus == "ok" {
+					data.ReservationStatus = "已成立"
+					if data.Commission == 0 {
+						data.ReservationStatus = "已取消"
 					}
-					fmt.Println()
+				} else if data.ReservationStatus == "no_show" {
+					data.ReservationStatus = "已成立"
+					if data.Commission == 0 {
+						data.ReservationStatus = "已取消"
+					}
+					if data.Commission != 0 {
+						data.ReservationStatus = "Chargeable no show"
+					}
+				} else if data.ReservationStatus == "cancelled_by_guest" || data.ReservationStatus == "cancelled_by_hotel" || data.ReservationStatus == "fraudulent" {
+					data.ReservationStatus = "已取消"
+					if data.Commission != 0 {
+						data.ReservationStatus = "Chargeable cancellation"
+					}
+				}
 
-					// 解碼JSON
-					var ordersData GetBookingReservationResponseBody
-					err = json.Unmarshal([]byte(result), &ordersData)
+				countAmount += reservation.Price.Amount
+				fmt.Println(data)
+				resultData = append(resultData, data)
+			}
+			fmt.Println()
+			totalAmount = math.Round(totalAmount*100) / 100
+			countAmount = math.Round(countAmount*100) / 100
+			if totalAmount != countAmount {
+				fmt.Println("totalAmount,countAmount", totalAmount, countAmount)
+				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+				fmt.Println("! 當日總金額不一致，請重新執行 !")
+				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
+				file.AppendToFile("booking_API_orders.txt", bookingAccommodationId+"\t"+data.BookingId+"\t"+currentDateString+"當日總金額不一致\n")
+				os.Exit(1)
+			} else {
+				if totalAmount == 0 {
+					if len(ordersData.Data.Reservations) == 0 {
+						fmt.Println("當日無訂單")
+					} else {
+						fmt.Println("當日無訂單，且金額一致")
+					}
+				} else {
+					fmt.Println("當日總金額一致")
+				}
+			}
+			time.Sleep(3 * time.Second)
+		}
+	} else if parse == "HTML" {
+		/// 財務 訂單明細
+		url = fmt.Sprintf("https://admin.booking.com/hotel/hoteladmin/extranet_ng/manage/finance_reservations.html?ses=%s&hotel_id=%s&period=%s&lang=xt", session, bookingAccommodationId, period)
+		if err := DoRequestAndGetResponse("GET", url, http.NoBody, cookie, &result); err != nil {
+			fmt.Println("DoRequestAndGetResponse failed!")
+			fmt.Println("err", err)
+			return
+		}
+
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(result))
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		// 儲存已經存在的 BookingId
+		existingBookingIds := make(map[string]bool)
+		currency := ""
+		var originalPrice float64
+		doc.Find("#reservations tbody tr").Each(func(i int, s *goquery.Selection) {
+			var data ReservationsDB
+			var isDispute string
+			s.Find("td").Each(func(j int, cell *goquery.Selection) {
+				switch j {
+				case 0:
+					bookingId := cell.Find("span.visible-print").Text()
+					data.BookingId = strings.TrimSpace(bookingId)
+
+				case 1:
+					data.GuestName = strings.TrimSpace(cell.Text())
+
+				case 2:
+					dateText := strings.TrimSpace(cell.Text())
+					// 找到 "日" 的位置
+					index := strings.Index(dateText, "日")
+					if index != -1 {
+						// 取得 "日" 之前的部分
+						dateText = dateText[:index+3]
+					}
+					parsedTime, err := time.Parse("2006 年 1 月 2 日", dateText)
 					if err != nil {
-						fmt.Println("JSON解碼錯誤:", err)
+						fmt.Println("日期解析錯誤:", err)
 						return
 					}
+					data.CheckInDate = parsedTime.Format("2006-01-02")
 
-					var data ReservationsDB
-					for _, reservation := range ordersData.Data.Reservations {
-						data.BookingId = strconv.FormatInt(reservation.BookingId, 10)
-						data.GuestName = reservation.GuestName
+				case 3:
+					dateText := strings.TrimSpace(cell.Text())
+					// 找到 "日" 的位置
+					index := strings.Index(dateText, "日")
+					if index != -1 {
+						// 取得 "日" 之前的部分
+						dateText = dateText[:index+3]
+					}
+					parsedTime, err := time.Parse("2006 年 1 月 2 日", dateText)
+					if err != nil {
+						fmt.Println("日期解析錯誤:", err)
+						return
+					}
+					data.CheckOutDate = parsedTime.Format("2006-01-02")
 
-						data.CheckOutDate = reservation.CheckOutDate
-						data.CheckInDate = reservation.CheckInDate
+				case 4:
+					roomNights, _ := strconv.Atoi(strings.TrimSpace(cell.Text()))
+					data.RoomNights = int64(roomNights)
 
-						checkInTime, err := time.Parse("2006-01-02", reservation.CheckInDate)
+				case 6:
+					data.ReservationStatus = strings.TrimSpace(cell.Text())
+					// 使用 strings.Fields 分割字符串
+					fields := strings.Fields(data.ReservationStatus)
+					// 取得空格前的第一個元素
+					if len(fields) > 0 {
+						data.ReservationStatus = fields[0]
+					}
+
+				case 8:
+					if strings.Contains(cell.Text(), "TWD") {
+						currency = "TWD"
+						priceStr := strings.Replace(cell.Text(), "TWD ", "", -1)
+						priceStr = strings.Replace(priceStr, ",", "", -1)
+						priceStr = strings.TrimSpace(priceStr)
+						// 使用 strings.Fields 分割字符串
+						fields := strings.Fields(priceStr)
+						// 取得空格前的第一個元素
+						if len(fields) > 0 {
+							priceStr = fields[0]
+						}
+						price, err := strconv.ParseFloat(priceStr, 64)
 						if err != nil {
-							fmt.Println("确认入住日期解析错误:", err)
+							log.Fatal(err)
 							return
 						}
-						checkOutTime, err := time.Parse("2006-01-02", reservation.CheckOutDate)
+						originalPrice = price
+					} else if strings.Contains(cell.Text(), "US$") {
+						currency = "USD"
+						priceStr := strings.Replace(cell.Text(), "US$", "", -1)
+						priceStr = strings.Replace(priceStr, ",", "", -1)
+						priceStr = strings.TrimSpace(priceStr)
+						// 使用 strings.Fields 分割字符串
+						fields := strings.Fields(priceStr)
+						// 取得空格前的第一個元素
+						if len(fields) > 0 {
+							priceStr = fields[0]
+						}
+						price, err := strconv.ParseFloat(priceStr, 64)
 						if err != nil {
-							fmt.Println("确认退房日期解析错误:", err)
+							log.Fatal(err)
 							return
 						}
-						duration := checkOutTime.Sub(checkInTime)
-						days := int(duration.Hours() / 24)
-						data.RoomNights = int64(days)
-
-						data.Price = reservation.Price.Amount - reservation.Commission.Original.Amount
-						data.Commission = reservation.Commission.Original.Amount
-						data.ReservationStatus = reservation.ReservationStatus
-						data.Platform = platformName
-						data.Currency = reservation.Price.Currency
-						if reservation.Occupancy.NumOfGuest > 0 {
-							data.NumOfGuests = reservation.Occupancy.NumOfGuest
-						} else {
-							data.NumOfGuests = reservation.Occupancy.Adults + reservation.Occupancy.Children
+						originalPrice = price
+					} else if strings.Contains(cell.Text(), "¥") {
+						currency = "JPY"
+						priceStr := strings.Replace(cell.Text(), "¥", "", -1)
+						priceStr = strings.Replace(priceStr, ",", "", -1)
+						priceStr = strings.TrimSpace(priceStr)
+						// 使用 strings.Fields 分割字符串
+						fields := strings.Fields(priceStr)
+						// 取得空格前的第一個元素
+						if len(fields) > 0 {
+							priceStr = fields[0]
 						}
+						price, err := strconv.ParseFloat(priceStr, 64)
+						if err != nil {
+							log.Fatal(err)
+							return
+						}
+						originalPrice = price
+					}
 
-						data.HotelId = hotelId
+				case 9:
+					priceStr := cell.Text()
+					if strings.Contains(priceStr, "TWD") {
+						priceStr = strings.Replace(priceStr, "TWD ", "", -1)
+						priceStr = strings.Replace(priceStr, ",", "", -1)
+						priceStr = strings.Replace(priceStr, " ", "", -1)
+						priceStr = strings.TrimSpace(priceStr)
+						fields := strings.Fields(priceStr)
+						if len(fields) > 0 {
+							priceStr = fields[0]
+						}
+						price, err := strconv.ParseFloat(priceStr, 64)
+						if err != nil {
+							log.Fatal(err)
+							return
+						}
+						data.Commission = price
+					} else if strings.Contains(cell.Text(), "US$") {
+						priceStr := strings.Replace(cell.Text(), "US$", "", -1)
+						priceStr = strings.Replace(priceStr, ",", "", -1)
+						priceStr = strings.Replace(priceStr, " ", "", -1)
+						priceStr = strings.TrimSpace(priceStr)
+						fields := strings.Fields(priceStr)
+						if len(fields) > 0 {
+							priceStr = fields[0]
+						}
+						price, err := strconv.ParseFloat(priceStr, 64)
+						if err != nil {
+							log.Fatal(err)
+							return
+						}
+						data.Commission = price
+					} else if strings.Contains(cell.Text(), "¥") {
+						priceStr := strings.Replace(cell.Text(), "¥", "", -1)
+						priceStr = strings.Replace(priceStr, ",", "", -1)
+						priceStr = strings.Replace(priceStr, " ", "", -1)
+						priceStr = strings.TrimSpace(priceStr)
+						fields := strings.Fields(priceStr)
+						if len(fields) > 0 {
+							priceStr = fields[0]
+						}
+						price, err := strconv.ParseFloat(priceStr, 64)
+						if err != nil {
+							log.Fatal(err)
+							return
+						}
+						data.Commission = price
+					}
 
-						if data.ReservationStatus == "ok" {
-							data.ReservationStatus = "已成立"
-							if data.Commission == 0 {
-								data.ReservationStatus = "已取消"
-							}
-						} else if data.ReservationStatus == "no_show" {
-							data.ReservationStatus = "已成立"
-							if data.Commission == 0 {
-								data.ReservationStatus = "已取消"
-							}
+				case 10:
+					if cell.Find(".glyphicon-ok").Length() > 0 {
+						dispute := cell.Find(".glyphicon-ok")
+						dispute.Each(func(i int, s *goquery.Selection) {
+							isDispute = "dispute"
+							fmt.Println("dispute", data.BookingId)
+						})
+					} else {
+						isDispute = "not dispute"
+					}
+
+				case 11:
+					charge := cell.Text()
+					charge = strings.Replace(charge, " ", "", -1)
+					data.Charge = charge
+				}
+				data.Platform = platformName
+				data.HotelId = bookingAccommodationId
+				data.Currency = currency
+
+				data.Price = originalPrice - data.Commission
+
+				// 檢查 BookingId 是否為空或是已經存在 existingBookingIds 中，如果是，就不加入 resultData
+				if data.BookingId != "" && data.ReservationStatus != "" && data.GuestName != "" && data.CheckInDate != "" && data.CheckOutDate != "" && isDispute != "" {
+					if !existingBookingIds[data.BookingId] {
+						if data.ReservationStatus == "已入住" {
+							data.ReservationStatus = "已取消"
 							if data.Commission != 0 {
-								data.ReservationStatus = "Chargeable no show"
+								data.ReservationStatus = "已成立"
 							}
-						} else if data.ReservationStatus == "cancelled_by_guest" || data.ReservationStatus == "cancelled_by_hotel" || data.ReservationStatus == "fraudulent" {
+						} else if data.ReservationStatus == "取消" {
 							data.ReservationStatus = "已取消"
 							if data.Commission != 0 {
 								data.ReservationStatus = "Chargeable cancellation"
 							}
+						} else if data.ReservationStatus == "未如期入住" {
+							data.ReservationStatus = "已取消"
+							if data.Commission != 0 {
+								data.ReservationStatus = "Chargeable no show"
+							}
 						}
-						fmt.Println("data", data)
+
+						if isDispute == "dispute" {
+							data.ModifyAmt = "discount"
+						}
+
 						resultData = append(resultData, data)
+						file.AppendToFile("booking_HTML_orders.txt", data.BookingId+"\t"+data.GuestName+"\t"+data.CheckInDate+"\t"+data.CheckOutDate+"\t"+strconv.FormatInt(data.RoomNights, 10)+"\t"+data.ReservationStatus+"\t"+strconv.FormatFloat(data.Price, 'f', 2, 64)+"\t"+strconv.FormatFloat(data.Commission, 'f', 2, 64)+"\n")
+						// 將目前的 BookingId 添加到 existingBookingIds 中
+						existingBookingIds[data.BookingId] = true
 					}
 				}
-			} else if parse == "HTML" {
-				/// 財務 訂單明細
-				url = fmt.Sprintf("https://admin.booking.com/hotel/hoteladmin/extranet_ng/manage/finance_reservations.html?ses=%s&hotel_id=%s&period=%s&lang=xt", session, hotelId, period)
-				if err := DoRequestAndGetResponse("GET", url, http.NoBody, cookie, &result); err != nil {
-					fmt.Println("DoRequestAndGetResponse failed!")
-					fmt.Println("err", err)
-					return
-				}
-
-				doc, err := goquery.NewDocumentFromReader(strings.NewReader(result))
-				if err != nil {
-					log.Fatal(err)
-					return
-				}
-				// 儲存已經存在的 BookingId
-				existingBookingIds := make(map[string]bool)
-				currency := ""
-				doc.Find("#reservations tbody tr").Each(func(i int, s *goquery.Selection) {
-					var data ReservationsDB
-					var isDispute string
-					s.Find("td").Each(func(j int, cell *goquery.Selection) {
-						switch j {
-						case 0:
-							bookingId := cell.Find("span.visible-print").Text()
-							data.BookingId = strings.TrimSpace(bookingId)
-
-						case 1:
-							data.GuestName = strings.TrimSpace(cell.Text())
-
-						case 2:
-							dateText := strings.TrimSpace(cell.Text())
-							// 找到 "日" 的位置
-							index := strings.Index(dateText, "日")
-							if index != -1 {
-								// 取得 "日" 之前的部分
-								dateText = dateText[:index+3]
-							}
-							parsedTime, err := time.Parse("2006 年 1 月 2 日", dateText)
-							if err != nil {
-								fmt.Println("日期解析錯誤:", err)
-								return
-							}
-							data.CheckInDate = parsedTime.Format("2006-01-02")
-
-						case 3:
-							dateText := strings.TrimSpace(cell.Text())
-							// 找到 "日" 的位置
-							index := strings.Index(dateText, "日")
-							if index != -1 {
-								// 取得 "日" 之前的部分
-								dateText = dateText[:index+3]
-							}
-							parsedTime, err := time.Parse("2006 年 1 月 2 日", dateText)
-							if err != nil {
-								fmt.Println("日期解析錯誤:", err)
-								return
-							}
-							data.CheckOutDate = parsedTime.Format("2006-01-02")
-
-						case 4:
-							roomNights, _ := strconv.Atoi(strings.TrimSpace(cell.Text()))
-							data.RoomNights = int64(roomNights)
-
-						case 6:
-							data.ReservationStatus = strings.TrimSpace(cell.Text())
-							// 使用 strings.Fields 分割字符串
-							fields := strings.Fields(data.ReservationStatus)
-							// 取得空格前的第一個元素
-							if len(fields) > 0 {
-								data.ReservationStatus = fields[0]
-							}
-
-						case 8:
-							if strings.Contains(cell.Text(), "TWD") {
-								currency = "TWD"
-								priceStr := strings.Replace(cell.Text(), "TWD ", "", -1)
-								priceStr = strings.Replace(priceStr, ",", "", -1)
-								priceStr = strings.TrimSpace(priceStr)
-								// 使用 strings.Fields 分割字符串
-								fields := strings.Fields(priceStr)
-								// 取得空格前的第一個元素
-								if len(fields) > 0 {
-									priceStr = fields[0]
-								}
-								price, err := strconv.ParseFloat(priceStr, 64)
-								if err != nil {
-									log.Fatal(err)
-									return
-								}
-								data.Price = price
-							} else if strings.Contains(cell.Text(), "US$") {
-								currency = "USD"
-								priceStr := strings.Replace(cell.Text(), "US$", "", -1)
-								priceStr = strings.Replace(priceStr, ",", "", -1)
-								priceStr = strings.TrimSpace(priceStr)
-								// 使用 strings.Fields 分割字符串
-								fields := strings.Fields(priceStr)
-								// 取得空格前的第一個元素
-								if len(fields) > 0 {
-									priceStr = fields[0]
-								}
-								price, err := strconv.ParseFloat(priceStr, 64)
-								if err != nil {
-									log.Fatal(err)
-									return
-								}
-								data.Price = price
-							} else if strings.Contains(cell.Text(), "¥") {
-								currency = "JPY"
-								priceStr := strings.Replace(cell.Text(), "¥", "", -1)
-								priceStr = strings.Replace(priceStr, ",", "", -1)
-								priceStr = strings.TrimSpace(priceStr)
-								// 使用 strings.Fields 分割字符串
-								fields := strings.Fields(priceStr)
-								// 取得空格前的第一個元素
-								if len(fields) > 0 {
-									priceStr = fields[0]
-								}
-								price, err := strconv.ParseFloat(priceStr, 64)
-								if err != nil {
-									log.Fatal(err)
-									return
-								}
-								data.Price = price
-							}
-
-						case 9:
-							priceStr := cell.Text()
-							if strings.Contains(priceStr, "TWD") {
-								priceStr = strings.Replace(priceStr, "TWD ", "", -1)
-								priceStr = strings.Replace(priceStr, ",", "", -1)
-								priceStr = strings.Replace(priceStr, " ", "", -1)
-								priceStr = strings.TrimSpace(priceStr)
-								fields := strings.Fields(priceStr)
-								if len(fields) > 0 {
-									priceStr = fields[0]
-								}
-								price, err := strconv.ParseFloat(priceStr, 64)
-								if err != nil {
-									log.Fatal(err)
-									return
-								}
-								data.Commission = price
-							} else if strings.Contains(cell.Text(), "US$") {
-								priceStr := strings.Replace(cell.Text(), "US$", "", -1)
-								priceStr = strings.Replace(priceStr, ",", "", -1)
-								priceStr = strings.Replace(priceStr, " ", "", -1)
-								priceStr = strings.TrimSpace(priceStr)
-								fields := strings.Fields(priceStr)
-								if len(fields) > 0 {
-									priceStr = fields[0]
-								}
-								price, err := strconv.ParseFloat(priceStr, 64)
-								if err != nil {
-									log.Fatal(err)
-									return
-								}
-								data.Commission = price
-							} else if strings.Contains(cell.Text(), "¥") {
-								priceStr := strings.Replace(cell.Text(), "¥", "", -1)
-								priceStr = strings.Replace(priceStr, ",", "", -1)
-								priceStr = strings.Replace(priceStr, " ", "", -1)
-								priceStr = strings.TrimSpace(priceStr)
-								fields := strings.Fields(priceStr)
-								if len(fields) > 0 {
-									priceStr = fields[0]
-								}
-								price, err := strconv.ParseFloat(priceStr, 64)
-								if err != nil {
-									log.Fatal(err)
-									return
-								}
-								data.Commission = price
-							}
-
-						case 10:
-							if cell.Find(".glyphicon-ok").Length() > 0 {
-								dispute := cell.Find(".glyphicon-ok")
-								dispute.Each(func(i int, s *goquery.Selection) {
-									isDispute = "dispute"
-									fmt.Println("dispute", data.BookingId)
-								})
-							} else {
-								isDispute = ""
-							}
-
-						case 11:
-							charge := cell.Text()
-							charge = strings.Replace(charge, " ", "", -1)
-							data.Charge = charge
-						}
-						data.Platform = platformName
-						data.HotelId = hotelId
-						data.Currency = currency
-
-						data.Price = data.Price - data.Commission
-						// 檢查 BookingId 是否為空或是已經存在 existingBookingIds 中，如果是，就不加入 resultData
-						if data.BookingId != "" && data.ReservationStatus != "" && data.Charge != "" {
-							if !existingBookingIds[data.BookingId] {
-								if data.ReservationStatus == "已入住" {
-									data.ReservationStatus = "已取消"
-									if data.Commission != 0 {
-										data.ReservationStatus = "已成立"
-									}
-								} else if data.ReservationStatus == "取消" {
-									data.ReservationStatus = "已取消"
-									if data.Commission != 0 {
-										data.ReservationStatus = "Chargeable cancellation"
-									}
-								} else if data.ReservationStatus == "未如期入住" {
-									data.ReservationStatus = "已取消"
-									if data.Commission != 0 {
-										data.ReservationStatus = "Chargeable no show"
-									}
-								}
-
-								if isDispute == "dispute" {
-									data.ModifyAmt = "discount"
-								}
-
-								resultData = append(resultData, data)
-								file.AppendToFile("hotel_orders.txt", data.BookingId+"\t"+data.GuestName+"\t"+data.CheckInDate+"\t"+data.CheckOutDate+"\t"+strconv.FormatInt(data.RoomNights, 10)+"\t"+data.ReservationStatus+"\t"+strconv.FormatFloat(data.Price, 'f', 2, 64)+"\t"+strconv.FormatFloat(data.Commission, 'f', 2, 64)+"\n")
-								// 將目前的 BookingId 添加到 existingBookingIds 中
-								existingBookingIds[data.BookingId] = true
-							}
-						}
-					})
-				})
-				fmt.Println("resultdata", resultData)
-			}
-
-			// 將 data 轉換為 JSON 格式
-			resultDataJSON, err := json.Marshal(resultData)
-			if err != nil {
-				fmt.Println("JSON 轉換錯誤:", err)
-				return
-			}
-
-			var resultDB string
-			// 將資料存入DB
-			apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
-			if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
-				fmt.Println("setParseHtmlToDB failed!")
-				return
-			}
-
-		}(hotelRaw)
+			})
+		})
+		fmt.Println("resultdata", resultData)
 	}
-	wg.Wait()
 
-	// for _, hotelRaw := range hotels {
-	// 	session := GetBookingSessionID(cookie)
-	// 	fmt.Println(session)
+	// 將 data 轉換為 JSON 格式
+	resultDataJSON, err := json.Marshal(resultData)
+	if err != nil {
+		fmt.Println("JSON 轉換錯誤:", err)
+		return
+	}
 
-	// 	hotel, ok := hotelRaw.(map[string]interface{})
-	// 	if !ok || hotel == nil {
-	// 		fmt.Println("無法取得 hotel")
-	// 		continue
-	// 	}
-
-	// 	hotelName, ok := hotel["name"].(string)
-	// 	if !ok {
-	// 		fmt.Println("無法取得 hotel name")
-	// 		continue
-	// 	}
-
-	// 	hotelId, ok := hotel["hotelid"].(string)
-	// 	if !ok {
-	// 		fmt.Println("無法取得 hotel id")
-	// 		continue
-	// 	}
-
-	// 	fmt.Printf("Hotel Name: %s, Hotel ID: %s\n", hotelName, hotelId)
-
-	// 	dateFromTime, err := time.Parse("2006-01-02", dateFrom)
-	// 	if err != nil {
-	// 		fmt.Println("日期解析錯誤:", err)
-	// 		return
-	// 	}
-
-	// 	dateToTime, err := time.Parse("2006-01-02", dateTo)
-	// 	if err != nil {
-	// 		fmt.Println("日期解析錯誤:", err)
-	// 		return
-	// 	}
-
-	// 	var resultData []ReservationsDB
-
-	// 	if parse == "API" {
-	// 		for current := dateFromTime; current.Before(dateToTime) || current.Equal(dateToTime); current = current.AddDate(0, 0, 1) {
-	// 			currentDateString := current.Format("2006-01-02")
-	// 			fmt.Printf("處理日期：%s\n", currentDateString)
-	// 			url = fmt.Sprintf("https://admin.booking.com/fresa/extranet/reservations/retrieve_list_v2?lang=xt&ses=%s&hotel_id=%s&hotel_account_id=17606105&perpage=1000&page=1&date_type=departure&date_from=%s&date_to=%s&token=%s", session, hotelId, currentDateString, currentDateString, token)
-	// 			if err := DoRequestAndGetResponse("POST", url, http.NoBody, cookie, &result); err != nil {
-	// 				fmt.Println("DoRequestAndGetResponse failed!")
-	// 				fmt.Println("err", err)
-	// 				return
-	// 			}
-	// 			fmt.Println()
-
-	// 			// 解碼JSON
-	// 			var ordersData GetBookingReservationResponseBody
-	// 			err = json.Unmarshal([]byte(result), &ordersData)
-	// 			if err != nil {
-	// 				fmt.Println("JSON解碼錯誤:", err)
-	// 				return
-	// 			}
-
-	// 			var data ReservationsDB
-	// 			for _, reservation := range ordersData.Data.Reservations {
-	// 				data.BookingId = strconv.FormatInt(reservation.BookingId, 10)
-	// 				data.GuestName = reservation.GuestName
-
-	// 				data.CheckOutDate = reservation.CheckOutDate
-	// 				data.CheckInDate = reservation.CheckInDate
-
-	// 				checkInTime, err := time.Parse("2006-01-02", reservation.CheckInDate)
-	// 				if err != nil {
-	// 					fmt.Println("确认入住日期解析错误:", err)
-	// 					return
-	// 				}
-	// 				checkOutTime, err := time.Parse("2006-01-02", reservation.CheckOutDate)
-	// 				if err != nil {
-	// 					fmt.Println("确认退房日期解析错误:", err)
-	// 					return
-	// 				}
-	// 				duration := checkOutTime.Sub(checkInTime)
-	// 				days := int(duration.Hours() / 24)
-	// 				data.RoomNights = int64(days)
-
-	// 				data.Price = reservation.Price.Amount - reservation.Commission.Original.Amount
-	// 				data.Commission = reservation.Commission.Original.Amount
-	// 				data.ReservationStatus = reservation.ReservationStatus
-	// 				data.Platform = platformName
-	// 				data.Currency = reservation.Price.Currency
-	// 				if reservation.Occupancy.NumOfGuest > 0 {
-	// 					data.NumOfGuests = reservation.Occupancy.NumOfGuest
-	// 				} else {
-	// 					data.NumOfGuests = reservation.Occupancy.Adults + reservation.Occupancy.Children
-	// 				}
-
-	// 				data.HotelId = hotelId
-
-	// 				if data.ReservationStatus == "ok" {
-	// 					data.ReservationStatus = "已成立"
-	// 					if data.Commission == 0 {
-	// 						data.ReservationStatus = "已取消"
-	// 					}
-	// 				} else if data.ReservationStatus == "no_show" {
-	// 					data.ReservationStatus = "已成立"
-	// 					if data.Commission == 0 {
-	// 						data.ReservationStatus = "已取消"
-	// 					}
-	// 					if data.Commission != 0 {
-	// 						data.ReservationStatus = "Chargeable no show"
-	// 					}
-	// 				} else if data.ReservationStatus == "cancelled_by_guest" || data.ReservationStatus == "cancelled_by_hotel" || data.ReservationStatus == "fraudulent" {
-	// 					data.ReservationStatus = "已取消"
-	// 					if data.Commission != 0 {
-	// 						data.ReservationStatus = "Chargeable cancellation"
-	// 					}
-	// 				}
-	// 				fmt.Println("data", data)
-	// 				resultData = append(resultData, data)
-	// 			}
-	// 		}
-	// } else if parse == "HTML" {
-	// 	/// 財務 訂單明細
-	// 	url = fmt.Sprintf("https://admin.booking.com/hotel/hoteladmin/extranet_ng/manage/finance_reservations.html?ses=%s&hotel_id=%s&period=%s&lang=xt", session, hotelId, period)
-	// 	if err := DoRequestAndGetResponse("GET", url, http.NoBody, cookie, &result); err != nil {
-	// 		fmt.Println("DoRequestAndGetResponse failed!")
-	// 		fmt.Println("err", err)
-	// 		return
-	// 	}
-
-	// 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(result))
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 		return
-	// 	}
-	// 	// 儲存已經存在的 BookingId
-	// 	existingBookingIds := make(map[string]bool)
-	// 	currency := ""
-	// 	doc.Find("#reservations tbody tr").Each(func(i int, s *goquery.Selection) {
-	// 		var data ReservationsDB
-	// 		var isDispute string
-	// 		s.Find("td").Each(func(j int, cell *goquery.Selection) {
-	// 			switch j {
-	// 			case 0:
-	// 				bookingId := cell.Find("span.visible-print").Text()
-	// 				data.BookingId = strings.TrimSpace(bookingId)
-
-	// 			case 1:
-	// 				data.GuestName = strings.TrimSpace(cell.Text())
-
-	// 			case 2:
-	// 				dateText := strings.TrimSpace(cell.Text())
-	// 				// 找到 "日" 的位置
-	// 				index := strings.Index(dateText, "日")
-	// 				if index != -1 {
-	// 					// 取得 "日" 之前的部分
-	// 					dateText = dateText[:index+3]
-	// 				}
-	// 				parsedTime, err := time.Parse("2006 年 1 月 2 日", dateText)
-	// 				if err != nil {
-	// 					fmt.Println("日期解析錯誤:", err)
-	// 					return
-	// 				}
-	// 				data.CheckInDate = parsedTime.Format("2006-01-02")
-
-	// 			case 3:
-	// 				dateText := strings.TrimSpace(cell.Text())
-	// 				// 找到 "日" 的位置
-	// 				index := strings.Index(dateText, "日")
-	// 				if index != -1 {
-	// 					// 取得 "日" 之前的部分
-	// 					dateText = dateText[:index+3]
-	// 				}
-	// 				parsedTime, err := time.Parse("2006 年 1 月 2 日", dateText)
-	// 				if err != nil {
-	// 					fmt.Println("日期解析錯誤:", err)
-	// 					return
-	// 				}
-	// 				data.CheckOutDate = parsedTime.Format("2006-01-02")
-
-	// 			case 4:
-	// 				roomNights, _ := strconv.Atoi(strings.TrimSpace(cell.Text()))
-	// 				data.RoomNights = int64(roomNights)
-
-	// 			case 6:
-	// 				data.ReservationStatus = strings.TrimSpace(cell.Text())
-	// 				// 使用 strings.Fields 分割字符串
-	// 				fields := strings.Fields(data.ReservationStatus)
-	// 				// 取得空格前的第一個元素
-	// 				if len(fields) > 0 {
-	// 					data.ReservationStatus = fields[0]
-	// 				}
-
-	// 			case 8:
-	// 				if strings.Contains(cell.Text(), "TWD") {
-	// 					currency = "TWD"
-	// 					priceStr := strings.Replace(cell.Text(), "TWD ", "", -1)
-	// 					priceStr = strings.Replace(priceStr, ",", "", -1)
-	// 					priceStr = strings.TrimSpace(priceStr)
-	// 					// 使用 strings.Fields 分割字符串
-	// 					fields := strings.Fields(priceStr)
-	// 					// 取得空格前的第一個元素
-	// 					if len(fields) > 0 {
-	// 						priceStr = fields[0]
-	// 					}
-	// 					price, err := strconv.ParseFloat(priceStr, 64)
-	// 					if err != nil {
-	// 						log.Fatal(err)
-	// 						return
-	// 					}
-	// 					data.Price = price
-	// 				} else if strings.Contains(cell.Text(), "US$") {
-	// 					currency = "USD"
-	// 					priceStr := strings.Replace(cell.Text(), "US$", "", -1)
-	// 					priceStr = strings.Replace(priceStr, ",", "", -1)
-	// 					priceStr = strings.TrimSpace(priceStr)
-	// 					// 使用 strings.Fields 分割字符串
-	// 					fields := strings.Fields(priceStr)
-	// 					// 取得空格前的第一個元素
-	// 					if len(fields) > 0 {
-	// 						priceStr = fields[0]
-	// 					}
-	// 					price, err := strconv.ParseFloat(priceStr, 64)
-	// 					if err != nil {
-	// 						log.Fatal(err)
-	// 						return
-	// 					}
-	// 					data.Price = price
-	// 				} else if strings.Contains(cell.Text(), "¥") {
-	// 					currency = "JPY"
-	// 					priceStr := strings.Replace(cell.Text(), "¥", "", -1)
-	// 					priceStr = strings.Replace(priceStr, ",", "", -1)
-	// 					priceStr = strings.TrimSpace(priceStr)
-	// 					// 使用 strings.Fields 分割字符串
-	// 					fields := strings.Fields(priceStr)
-	// 					// 取得空格前的第一個元素
-	// 					if len(fields) > 0 {
-	// 						priceStr = fields[0]
-	// 					}
-	// 					price, err := strconv.ParseFloat(priceStr, 64)
-	// 					if err != nil {
-	// 						log.Fatal(err)
-	// 						return
-	// 					}
-	// 					data.Price = price
-	// 				}
-
-	// 			case 9:
-	// 				priceStr := cell.Text()
-	// 				if strings.Contains(priceStr, "TWD") {
-	// 					priceStr = strings.Replace(priceStr, "TWD ", "", -1)
-	// 					priceStr = strings.Replace(priceStr, ",", "", -1)
-	// 					priceStr = strings.Replace(priceStr, " ", "", -1)
-	// 					priceStr = strings.TrimSpace(priceStr)
-	// 					fields := strings.Fields(priceStr)
-	// 					if len(fields) > 0 {
-	// 						priceStr = fields[0]
-	// 					}
-	// 					price, err := strconv.ParseFloat(priceStr, 64)
-	// 					if err != nil {
-	// 						log.Fatal(err)
-	// 						return
-	// 					}
-	// 					data.Commission = price
-	// 				} else if strings.Contains(cell.Text(), "US$") {
-	// 					priceStr := strings.Replace(cell.Text(), "US$", "", -1)
-	// 					priceStr = strings.Replace(priceStr, ",", "", -1)
-	// 					priceStr = strings.Replace(priceStr, " ", "", -1)
-	// 					priceStr = strings.TrimSpace(priceStr)
-	// 					fields := strings.Fields(priceStr)
-	// 					if len(fields) > 0 {
-	// 						priceStr = fields[0]
-	// 					}
-	// 					price, err := strconv.ParseFloat(priceStr, 64)
-	// 					if err != nil {
-	// 						log.Fatal(err)
-	// 						return
-	// 					}
-	// 					data.Commission = price
-	// 				} else if strings.Contains(cell.Text(), "¥") {
-	// 					priceStr := strings.Replace(cell.Text(), "¥", "", -1)
-	// 					priceStr = strings.Replace(priceStr, ",", "", -1)
-	// 					priceStr = strings.Replace(priceStr, " ", "", -1)
-	// 					priceStr = strings.TrimSpace(priceStr)
-	// 					fields := strings.Fields(priceStr)
-	// 					if len(fields) > 0 {
-	// 						priceStr = fields[0]
-	// 					}
-	// 					price, err := strconv.ParseFloat(priceStr, 64)
-	// 					if err != nil {
-	// 						log.Fatal(err)
-	// 						return
-	// 					}
-	// 					data.Commission = price
-	// 				}
-
-	// 			case 10:
-	// 				if cell.Find(".glyphicon-ok").Length() > 0 {
-	// 					dispute := cell.Find(".glyphicon-ok")
-	// 					dispute.Each(func(i int, s *goquery.Selection) {
-	// 						isDispute = "dispute"
-	// 						fmt.Println("dispute", data.BookingId)
-	// 					})
-	// 				} else {
-	// 					isDispute = ""
-	// 				}
-
-	// 			case 11:
-	// 				charge := cell.Text()
-	// 				charge = strings.Replace(charge, " ", "", -1)
-	// 				data.Charge = charge
-	// 			}
-	// 			data.Platform = platformName
-	// 			data.HotelId = hotelId
-	// 			data.Currency = currency
-
-	// 			data.Price = data.Price - data.Commission
-	// 			// 檢查 BookingId 是否為空或是已經存在 existingBookingIds 中，如果是，就不加入 resultData
-	// 			if data.BookingId != "" && data.ReservationStatus != "" && data.Charge != "" {
-	// 				if !existingBookingIds[data.BookingId] {
-	// 					if data.ReservationStatus == "已入住" {
-	// 						data.ReservationStatus = "已取消"
-	// 						if data.Commission != 0 {
-	// 							data.ReservationStatus = "已成立"
-	// 						}
-	// 					} else if data.ReservationStatus == "取消" {
-	// 						data.ReservationStatus = "已取消"
-	// 						if data.Commission != 0 {
-	// 							data.ReservationStatus = "Chargeable cancellation"
-	// 						}
-	// 					} else if data.ReservationStatus == "未如期入住" {
-	// 						data.ReservationStatus = "已取消"
-	// 						if data.Commission != 0 {
-	// 							data.ReservationStatus = "Chargeable no show"
-	// 						}
-	// 					}
-
-	// 					if isDispute == "dispute" {
-	// 						data.ModifyAmt = "discount"
-	// 					}
-
-	// 					resultData = append(resultData, data)
-	// 					file.AppendToFile("hotel_orders.txt", data.BookingId+"\t"+data.GuestName+"\t"+data.CheckInDate+"\t"+data.CheckOutDate+"\t"+strconv.FormatInt(data.RoomNights, 10)+"\t"+data.ReservationStatus+"\t"+strconv.FormatFloat(data.Price, 'f', 2, 64)+"\t"+strconv.FormatFloat(data.Commission, 'f', 2, 64)+"\n")
-	// 					// 將目前的 BookingId 添加到 existingBookingIds 中
-	// 					existingBookingIds[data.BookingId] = true
-	// 				}
-	// 			}
-	// 		})
-	// 	})
-	// 	fmt.Println("resultdata", resultData)
-	// }
-
-	// 	// 將 data 轉換為 JSON 格式
-	// 	resultDataJSON, err := json.Marshal(resultData)
-	// 	if err != nil {
-	// 		fmt.Println("JSON 轉換錯誤:", err)
-	// 		return
-	// 	}
-
-	// 	var resultDB string
-	// 	// 將資料存入DB
-	// 	apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
-	// 	if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
-	// 		fmt.Println("setParseHtmlToDB failed!")
-	// 		return
-	// 	}
-	// 	// time.Sleep(10 * time.Second)
-	// }
+	var resultDB string
+	// 將資料存入DB
+	apiurl := "http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB"
+	if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
+		fmt.Println("setParseHtmlToDB failed!")
+		return
+	}
+	time.Sleep(30 * time.Second)
 }
 
 func GetBookingSessionID(cookie string) string {
@@ -855,7 +530,6 @@ func GetBookingSessionID(cookie string) string {
 			match := re.FindStringSubmatch(text)
 			if len(match) > 1 {
 				session = match[1]
-				fmt.Println("match found -", match[1])
 			} else {
 				fmt.Println("match not found")
 			}
@@ -871,16 +545,7 @@ func DoRequestAndGetResponse(method, postUrl string, reqBody io.Reader, cookie s
 		return err
 	}
 	req.Header.Set("Cookie", cookie)
-	switch resBody := resBody.(type) {
-	case *string:
-		fmt.Println("string")
-		fmt.Println(resBody)
-
-		req.Header.Set("Content-Type", "application/json")
-	default:
-		fmt.Println("not string")
-		req.Header.Set("Content-Type", "application/json")
-	}
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{Timeout: 100 * time.Second}
 	resp, err := client.Do(req)
@@ -888,10 +553,8 @@ func DoRequestAndGetResponse(method, postUrl string, reqBody io.Reader, cookie s
 		return err
 	}
 
-	// resBody of type *string is for html
 	switch resBody := resBody.(type) {
 	case *string:
-		// If resBody is a string
 		resBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
@@ -906,8 +569,6 @@ func DoRequestAndGetResponse(method, postUrl string, reqBody io.Reader, cookie s
 			return err
 		}
 	}
-
 	defer resp.Body.Close()
-
 	return nil
 }

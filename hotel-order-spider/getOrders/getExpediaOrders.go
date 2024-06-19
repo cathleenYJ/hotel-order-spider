@@ -63,114 +63,82 @@ type GetExpediaReservationsResponseBody struct {
 	} `json:"data"`
 }
 
-func GetExpedia(platform map[string]interface{}, dateFrom, dateTo string) {
+func GetExpedia(platform map[string]interface{}, dateFrom, dateTo, expediaAccommodationId string) {
 	cookie, ok := platform["cookie"].(string)
 	if !ok {
 		fmt.Println("cookie error")
 	}
 
-	hotels, ok := platform["hotel"].([]interface{})
-	if !ok || hotels == nil {
-		fmt.Println("hotel error")
+	url := "https://api.expediapartnercentral.com/supply/experience/gateway/graphql"
+	var reqBody GetExpediaReservationsAPIRequestBody
+	reqBody.Query = fmt.Sprintf("query getReservationsBySearchCriteria {reservationSearchV2(input: {propertyId: %s, booked: true, bookingItemId: null, canceled: true, confirmationNumber: null, confirmed: true, startDate: \"%s\", endDate: \"%s\", dateType: \"checkOut\", evc: false, expediaCollect: true, timezoneOffset: \"+08:00\", firstName: null, hotelCollect: true, isSpecialRequest: false, isVIPBooking: false, lastName: null, reconciled: false, readyToReconcile: false, returnBookingItemIDsOnly: false, searchParam: null, unconfirmed: true searchForCancelWaiversOnly: false }) { reservationItems{ reservationItemId reservationInfo {reservationTpid propertyId startDate endDate createDateTime brandDisplayName newReservationItemId country reservationAttributes {businessModel bookingStatus fraudCancelled fraudReleased stayStatus eligibleForECNoShowAndCancel strongCustomerAuthentication} specialRequestDetails accessibilityRequestDetails product {productTypeId unitName bedTypeName propertyVipStatus} customerArrivalTime {arrival}readyToReconcile epsBooking } customer {id guestName phoneNumber email emailAlias country} loyaltyInfo {loyaltyStatus vipAmenities} confirmationInfo {productConfirmationCode} conversationsInfo {conversationsSupported id unreadMessageCount conversationStatus cpcePartnerId}totalAmounts {totalAmountForPartners {value currencyCode}totalCommissionAmount {value currencyCode}totalReservationAmount {value currencyCode}propertyBookingTotal {value currencyCode}totalReservationAmountInPartnerCurrency {value currencyCode}}reservationActions {requestToCancel {reason actionSupported actionUnsupportedBehavior {hide disable}}changeStayDates {reason actionSupported}requestRelocation {reason actionSupported}actionAttributes {highFence}reconciliationActions {markAsNoShow {reason actionSupported actionUnsupportedBehavior {hide disable openVa}virtualAgentParameters {intentName taxonomyId}}undoMarkNoShow {reason actionSupported actionUnsupportedBehavior {hide disable}}changeCancellationFee {reason actionSupported actionUnsupportedBehavior {hide disable}}resetCancellationFee {reason actionSupported actionUnsupportedBehavior {hide disable}}markAsCancellation {reason actionSupported actionUnsupportedBehavior {hide disable}}undoMarkAsCancellation {reason actionSupported actionUnsupportedBehavior {hide disable}}changeReservationAmountsOrDates {reason actionSupported actionUnsupportedBehavior {hide disable}}resetReservationAmountsOrDates {reason actionSupported actionUnsupportedBehavior {hide disable}}}}reconciliationInfo {reconciliationDateTime reconciliationType}paymentInfo {evcCardDetailsExist expediaVirtualCardResourceId creditCardDetails { viewable viewCountLimit viewCountLeft viewCount hideCvvFromDisplay valid prevalidateCardOptIn cardValidationViewable inViewingWindow validationInfo {validationStatus validationType validationDate validationBy hasGuestProvidedNewCC newCreditCardReceivedDate is24HoursFromLastValidation } }}billingInfo {invoiceNumber }cancellationInfo {cancelDateTime cancellationPolicy {priceCurrencyCode costCurrencyCode policyType cancellationPenalties {penaltyCost penaltyPrice penaltyPerStayFee penaltyTime penaltyInterval penaltyStartHour penaltyEndHour }nonrefundableDatesList}}compensationDetails {reservationWaiverType reservationFeeAmounts {propertyWaivedFeeLineItem {costCurrency costAmount }}} searchWaiverRequest {serviceRequestId type typeDetails state orderNumber partnerId createdDate srConversationId lastUpdatedDate notes {text author {firstName lastName }}}} numOfCancelWaivers}}", expediaAccommodationId, dateFrom, dateTo)
+	jsonReqBody, _ := json.Marshal(reqBody)
+
+	var ordersData GetExpediaReservationsResponseBody
+	if err := DoRequestAndGetResponse_expedia("POST", url, bytes.NewBuffer(jsonReqBody), cookie, &ordersData); err != nil {
+		fmt.Println("123err:", err)
+		return
 	}
 
-	for _, hotelRaw := range hotels {
-		hotel, ok := hotelRaw.(map[string]interface{})
-		if !ok || hotel == nil {
-			fmt.Println("hotel error")
-			continue
+	var resultData []ReservationsDB
+
+	for _, reservation := range ordersData.Data.ReservationSearchV2.ReservationItems {
+		var data ReservationsDB
+		data.GuestName = reservation.Customer.GuestName
+		data.Platform = "Expedia"
+		data.CheckInDate = reservation.ReservationInfo.StartDate
+		data.CheckOutDate = reservation.ReservationInfo.EndDate
+		data.BookDate = reservation.ReservationInfo.CreateDateTime
+		data.RoomType = reservation.ReservationInfo.Product.UnitName
+		data.Price = reservation.TotalAmounts.TotalAmountForPartners.Value
+		data.Commission = 0
+		data.BookingId = reservation.ReservationItemID
+
+		originalStatus := reservation.ReservationInfo.ReservationAttributes.StayStatus
+		if originalStatus == "postStay" {
+			data.ReservationStatus = "已成立"
+		} else if originalStatus == "cancelled" {
+			data.ReservationStatus = "已取消"
+			if data.Price != 0 {
+				data.ReservationStatus = "Chargeable cancellation"
+			}
+		} else if originalStatus == "markedAsNoShow" {
+			data.ReservationStatus = "已取消"
+			if data.Price != 0 {
+				data.ReservationStatus = "Chargeable no show"
+			}
+		} else {
+			data.ReservationStatus = originalStatus
 		}
 
-		hotelName, ok := hotel["name"].(string)
-		if !ok {
-			fmt.Println("hotel name error")
-			continue
+		startDate, _ := time.Parse("2006-01-02", reservation.ReservationInfo.StartDate)
+		endDate, _ := time.Parse("2006-01-02", reservation.ReservationInfo.EndDate)
+		roomNights := 0
+		for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
+			roomNights += 1
 		}
-		fmt.Printf("hotelName: %s", hotelName)
+		data.RoomNights = int64(roomNights) - 1
 
-		hotelId, ok := hotel["hotelid"].(string)
-		if !ok {
-			fmt.Println("hotel id error")
-			continue
-		}
+		data.HotelId = expediaAccommodationId
 
-		url := "https://api.expediapartnercentral.com/supply/experience/gateway/graphql"
-		var reqBody GetExpediaReservationsAPIRequestBody
-		reqBody.Query = fmt.Sprintf("query getReservationsBySearchCriteria {reservationSearchV2(input: {propertyId: %s, booked: true, bookingItemId: null, canceled: true, confirmationNumber: null, confirmed: true, startDate: \"%s\", endDate: \"%s\", dateType: \"checkOut\", evc: false, expediaCollect: true, timezoneOffset: \"+08:00\", firstName: null, hotelCollect: true, isSpecialRequest: false, isVIPBooking: false, lastName: null, reconciled: false, readyToReconcile: false, returnBookingItemIDsOnly: false, searchParam: null, unconfirmed: true searchForCancelWaiversOnly: false }) { reservationItems{ reservationItemId reservationInfo {reservationTpid propertyId startDate endDate createDateTime brandDisplayName newReservationItemId country reservationAttributes {businessModel bookingStatus fraudCancelled fraudReleased stayStatus eligibleForECNoShowAndCancel strongCustomerAuthentication} specialRequestDetails accessibilityRequestDetails product {productTypeId unitName bedTypeName propertyVipStatus} customerArrivalTime {arrival}readyToReconcile epsBooking } customer {id guestName phoneNumber email emailAlias country} loyaltyInfo {loyaltyStatus vipAmenities} confirmationInfo {productConfirmationCode} conversationsInfo {conversationsSupported id unreadMessageCount conversationStatus cpcePartnerId}totalAmounts {totalAmountForPartners {value currencyCode}totalCommissionAmount {value currencyCode}totalReservationAmount {value currencyCode}propertyBookingTotal {value currencyCode}totalReservationAmountInPartnerCurrency {value currencyCode}}reservationActions {requestToCancel {reason actionSupported actionUnsupportedBehavior {hide disable}}changeStayDates {reason actionSupported}requestRelocation {reason actionSupported}actionAttributes {highFence}reconciliationActions {markAsNoShow {reason actionSupported actionUnsupportedBehavior {hide disable openVa}virtualAgentParameters {intentName taxonomyId}}undoMarkNoShow {reason actionSupported actionUnsupportedBehavior {hide disable}}changeCancellationFee {reason actionSupported actionUnsupportedBehavior {hide disable}}resetCancellationFee {reason actionSupported actionUnsupportedBehavior {hide disable}}markAsCancellation {reason actionSupported actionUnsupportedBehavior {hide disable}}undoMarkAsCancellation {reason actionSupported actionUnsupportedBehavior {hide disable}}changeReservationAmountsOrDates {reason actionSupported actionUnsupportedBehavior {hide disable}}resetReservationAmountsOrDates {reason actionSupported actionUnsupportedBehavior {hide disable}}}}reconciliationInfo {reconciliationDateTime reconciliationType}paymentInfo {evcCardDetailsExist expediaVirtualCardResourceId creditCardDetails { viewable viewCountLimit viewCountLeft viewCount hideCvvFromDisplay valid prevalidateCardOptIn cardValidationViewable inViewingWindow validationInfo {validationStatus validationType validationDate validationBy hasGuestProvidedNewCC newCreditCardReceivedDate is24HoursFromLastValidation } }}billingInfo {invoiceNumber }cancellationInfo {cancelDateTime cancellationPolicy {priceCurrencyCode costCurrencyCode policyType cancellationPenalties {penaltyCost penaltyPrice penaltyPerStayFee penaltyTime penaltyInterval penaltyStartHour penaltyEndHour }nonrefundableDatesList}}compensationDetails {reservationWaiverType reservationFeeAmounts {propertyWaivedFeeLineItem {costCurrency costAmount }}} searchWaiverRequest {serviceRequestId type typeDetails state orderNumber partnerId createdDate srConversationId lastUpdatedDate notes {text author {firstName lastName }}}} numOfCancelWaivers}}", hotelId, dateFrom, dateTo)
-		jsonReqBody, _ := json.Marshal(reqBody)
+		resultData = append(resultData, data)
+	}
 
-		var ordersData GetExpediaReservationsResponseBody
-		// err := json.Unmarshal([]byte(result), &ordersData)
-		// if err != nil {
-		// 	fmt.Println("JSON解碼錯誤:", err)
-		// 	return
-		// }
-		if err := DoRequestAndGetResponse_expedia("POST", url, bytes.NewBuffer(jsonReqBody), cookie, &ordersData); err != nil {
-			fmt.Println("123err:", err)
+	fmt.Println("resultData", resultData)
+
+	resultDataJSON, err := json.Marshal(resultData)
+	if err != nil {
+		fmt.Println("JSON 轉換錯誤:", err)
+		return
+	}
+
+	if len(resultData) > 0 {
+		var resultDB string
+		// 將資料存入DB
+		apiurl := `http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB`
+		if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
+			fmt.Println("setParseHtmlToDB failed!")
 			return
-		}
-		fmt.Println("ordersData", ordersData)
-
-		var resultData []ReservationsDB
-
-		for _, reservation := range ordersData.Data.ReservationSearchV2.ReservationItems {
-			var data ReservationsDB
-			data.GuestName = reservation.Customer.GuestName
-			data.Platform = "Expedia"
-			data.CheckInDate = reservation.ReservationInfo.StartDate
-			data.CheckOutDate = reservation.ReservationInfo.EndDate
-			data.BookDate = reservation.ReservationInfo.CreateDateTime
-			data.RoomType = reservation.ReservationInfo.Product.UnitName
-			data.Price = reservation.TotalAmounts.TotalAmountForPartners.Value
-			data.Commission = 0
-			data.BookingId = reservation.ReservationItemID
-
-			originalStatus := reservation.ReservationInfo.ReservationAttributes.StayStatus
-			if originalStatus == "postStay" {
-				data.ReservationStatus = "已成立"
-			} else if originalStatus == "cancelled" {
-				data.ReservationStatus = "已取消"
-				if data.Price != 0 {
-					data.ReservationStatus = "Chargeable cancellation"
-				}
-			} else if originalStatus == "markedAsNoShow" {
-				data.ReservationStatus = "已取消"
-				if data.Price != 0 {
-					data.ReservationStatus = "Chargeable no show"
-				}
-			} else {
-				data.ReservationStatus = originalStatus
-			}
-
-			startDate, _ := time.Parse("2006-01-02", reservation.ReservationInfo.StartDate)
-			endDate, _ := time.Parse("2006-01-02", reservation.ReservationInfo.EndDate)
-			roomNights := 0
-			for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
-				roomNights += 1
-			}
-			data.RoomNights = int64(roomNights) - 1
-
-			data.HotelId = hotelId
-
-			resultData = append(resultData, data)
-		}
-
-		fmt.Println("resultData", resultData)
-
-		resultDataJSON, err := json.Marshal(resultData)
-		if err != nil {
-			fmt.Println("JSON 轉換錯誤:", err)
-			return
-		}
-
-		if len(resultData) > 0 {
-			var resultDB string
-			// 將資料存入DB
-			apiurl := `http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB`
-			if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
-				fmt.Println("setParseHtmlToDB failed!")
-				return
-			}
 		}
 	}
 }
