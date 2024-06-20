@@ -142,20 +142,19 @@ func main() {
 	// 讀取 config.yaml
 	selectedConfigFiles := readConfigYaml()
 
-	// 選擇執行方式
-	reader, choice := choiceProcessType()
-
-	// 設定 reqBody, startIndex, endIndex
-	reqBody, startIndex, endIndex, shouldReturn1, numOfHotels := choiceFunction(choice, reader)
-	if shouldReturn1 {
-		return
-	}
-
+	reqBody := `{"mrhost_id": "","group_id":"0","limit": 1000, "page_no": 1}`
 	// 取得旅館資訊
 	resultDB, shouldReturn := getHotelInfoFunction(reqBody)
 	if shouldReturn {
 		return
 	}
+
+	var startID, endID string
+	fmt.Println("--> 請輸入「起始」 mrhost_id :")
+	fmt.Scanln(&startID)
+	fmt.Println("--> 請輸入「結束」 mrhost_id :")
+	fmt.Scanln(&endID)
+	fmt.Println()
 
 	for _, configFile := range selectedConfigFiles {
 
@@ -184,12 +183,52 @@ func main() {
 		lastDayOfMonth := startTime.AddDate(0, 1, -1)
 		dateTo := lastDayOfMonth.Format("2006-01-02")
 
-		// 執行指定 account
-		shouldReturn2 := processAccount(resultDB, startIndex, endIndex, period, dateFrom, dateTo, numOfHotels)
-		if shouldReturn2 {
-			return
+		accounts := viper.Get("account").([]interface{})
+		if accounts == nil {
+			fmt.Println("無法取得 account")
 		}
 
+		for _, acc := range accounts {
+			account := acc.(map[string]interface{})
+
+			accountName, ok := account["name"].(string)
+			if !ok {
+				fmt.Println("無法取得 account name")
+				continue
+			}
+
+			fmt.Printf("accountName: %s\n", accountName)
+
+			if platformRaw, ok := account["platform"]; ok {
+				platforms, ok := platformRaw.([]interface{})
+				if !ok || platforms == nil {
+					fmt.Println("無法取得 platform")
+					continue
+				}
+
+				for _, platformRaw := range platforms {
+					platform, ok := platformRaw.(map[string]interface{})
+					if !ok || platform == nil {
+						fmt.Println("無法取得 platform")
+						continue
+					}
+
+					platformName, ok := platform["name"].(string)
+					if !ok {
+						fmt.Println("無法取得 platform name")
+						continue
+					}
+
+					fmt.Printf("platformName: %s\n", platformName)
+
+					// 執行所有旅館
+					processAllHotel(resultDB, platformName, platform, period, dateFrom, dateTo, startID, endID)
+					// 執行其他平台
+					processOtherPlatform(platformName, platform, accountName, dateFrom, dateTo)
+
+				}
+			}
+		}
 	}
 }
 
@@ -234,83 +273,21 @@ func readConfigYaml() []string {
 	return selectedConfigFiles
 }
 
-func processAccount(resultDB APIResponse, startIndex int, endIndex int, period string, dateFrom string, dateTo string, numOfHotels int) bool {
-	accounts := viper.Get("account").([]interface{})
-	if accounts == nil {
-		fmt.Println("無法取得 account")
-		return true
-	}
+func processAllHotel(resultDB APIResponse, platformName string, platform map[string]interface{}, period string, dateFrom string, dateTo string, startID string, endID string) {
+	startIDNum, _ := strconv.Atoi(strings.TrimPrefix(startID, "R"))
+	endIDNum, _ := strconv.Atoi(strings.TrimPrefix(endID, "R"))
 
-	for _, acc := range accounts {
-		account := acc.(map[string]interface{})
-
-		accountName, ok := account["name"].(string)
-		if !ok {
-			fmt.Println("無法取得 account name")
-			continue
+	for _, hotel := range resultDB.Result {
+		hotelIDNum, _ := strconv.Atoi(strings.TrimPrefix(hotel.HotelId, "R"))
+		if hotelIDNum >= startIDNum && hotelIDNum <= endIDNum {
+			setHotelId(hotel, platformName, platform, period, dateFrom, dateTo)
 		}
-
-		fmt.Printf("accountName: %s\n", accountName)
-
-		if platformRaw, ok := account["platform"]; ok {
-			platforms, ok := platformRaw.([]interface{})
-			if !ok || platforms == nil {
-				fmt.Println("無法取得 platform")
-				continue
-			}
-
-			for _, platformRaw := range platforms {
-				platform, ok := platformRaw.(map[string]interface{})
-				if !ok || platform == nil {
-					fmt.Println("無法取得 platform")
-					continue
-				}
-
-				platformName, ok := platform["name"].(string)
-				if !ok {
-					fmt.Println("無法取得 platform name")
-					continue
-				}
-
-				fmt.Printf("platformName: %s\n", platformName)
-
-				// 執行所有旅館
-				processAllHotel(resultDB, startIndex, endIndex, platformName, platform, period, dateFrom, dateTo, numOfHotels)
-				// 執行其他平台
-				processOtherPlatform(platformName, platform, accountName, dateFrom, dateTo)
-
-			}
-		}
-	}
-	return false
-}
-
-func choiceProcessType() (*bufio.Reader, string) {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("--> 請選擇執行「所有旅館」或是「單一旅館」 :")
-	fmt.Println("1:所有旅館 2:單一旅館")
-	choice, _ := reader.ReadString('\n')
-	choice = strings.TrimSpace(choice)
-	return reader, choice
-}
-
-func processAllHotel(resultDB APIResponse, startIndex int, endIndex int, platformName string, platform map[string]interface{}, period string, dateFrom string, dateTo string, numOfHotels int) {
-	for index, hotel := range resultDB.Result {
-		if numOfHotels != 0 {
-			if index >= startIndex && index < endIndex {
-				setHotelId(index, hotel, platformName, platform, period, dateFrom, dateTo)
-			}
-		} else {
-			setHotelId(index, hotel, platformName, platform, period, dateFrom, dateTo)
-		}
-
 	}
 }
 
-func setHotelId(index int, hotel RevenueAccommodationInformation, platformName string, platform map[string]interface{}, period string, dateFrom string, dateTo string) {
+func setHotelId(hotel RevenueAccommodationInformation, platformName string, platform map[string]interface{}, period string, dateFrom string, dateTo string) {
 	fmt.Println()
 	fmt.Println("----------------------------- START -----------------------------")
-	fmt.Println("第", index+1, "間旅館")
 	mrhostId := hotel.HotelId
 	hotelName := hotel.ChineseName
 	bookingAccommodationId := hotel.BookingAccommodationId
@@ -386,61 +363,6 @@ func processOtherPlatform(platformName string, platform map[string]interface{}, 
 	if platformName == "Airbnb" {
 		getOrders.GetAirbnb(platform, dateFrom, dateTo)
 	}
-}
-
-func choiceFunction(choice string, reader *bufio.Reader) (string, int, int, bool, int) {
-	var reqBody string
-	var startIndex int
-	var endIndex int
-	var shouldReturn1 bool
-	var numOfHotels int
-	switch choice {
-	case "1":
-		fmt.Println("--> 請輸入每一梯次要執行幾個旅館 :")
-		fmt.Println("EX:10、20，輸入 0 則代表全部執行")
-		numOfHotelsInput, _ := reader.ReadString('\n')
-		numOfHotelsInput = strings.TrimSpace(numOfHotelsInput)
-		numOfHotels, _ = strconv.Atoi(numOfHotelsInput)
-
-		fmt.Println("每一梯次將執行", numOfHotels, "個旅館")
-
-		if numOfHotels == 0 {
-			fmt.Println("將執行所有旅館")
-		} else {
-			fmt.Println("--> 請輸入執行旅館梯次 :")
-			fmt.Println("EX:1、2")
-			input, _ := reader.ReadString('\n')
-			input = strings.TrimSpace(input)
-			batchSize, err := strconv.Atoi(input)
-			if err != nil {
-				fmt.Println("請重新輸入 : ", err)
-				os.Exit(1)
-			}
-			if batchSize == 0 {
-				fmt.Println("將執行所有旅館")
-			} else {
-				fmt.Println("將執行第", batchSize, "梯次旅館")
-			}
-			startIndex = (batchSize - 1) * numOfHotels
-			endIndex = batchSize * numOfHotels
-		}
-
-		reqBody = `{"mrhost_id": "","group_id":"","limit": 1000, "page_no": 1}`
-	case "2":
-		fmt.Println("--> 請輸入 mrhost_id :")
-		fmt.Println("EX:R10001、R10002")
-		mrhostID, _ := reader.ReadString('\n')
-		mrhostID = strings.TrimSpace(mrhostID)
-		fmt.Println("--> 請輸入 group_id :")
-		fmt.Println("EX:0、1")
-		groupID, _ := reader.ReadString('\n')
-		groupID = strings.TrimSpace(groupID)
-		reqBody = fmt.Sprintf(`{"mrhost_id": "%s","group_id":"%s","limit": 1000, "page_no": 1}`, mrhostID, groupID)
-	default:
-		fmt.Println("請重新執行 go run main.go")
-		os.Exit(1)
-	}
-	return reqBody, startIndex, endIndex, shouldReturn1, numOfHotels
 }
 
 func getHotelInfoFunction(reqBody string) (APIResponse, bool) {
