@@ -41,36 +41,22 @@ type GetOldSIMOrderResponseBody struct {
 
 func GetOldSIM(platform map[string]interface{}, dateFrom, dateTo, oldSIMAccommodationId string) {
 	var result string
-
-	cookie, ok := platform["cookie"].(string)
-	if !ok {
-		fmt.Println("cookie error")
-	}
-
-	x_xsrf_token, ok := platform["x_xsrf_token"].(string)
-	if !ok {
-		fmt.Println("x-xsrf-token error")
-	}
-
-	x_xsrf_token_url, ok := platform["x_xsrf_token_url"].(string)
-	if !ok {
-		fmt.Println("x_xsrf_token_url error")
-	}
-
-	url := fmt.Sprintf("https://app-apac.siteminder.com/web/extranet/reloaded/hoteliers/%s/reservations", oldSIMAccommodationId)
-
 	var resultData []ReservationsDB
 	var ordersData GetOldSIMOrderResponseBody
+
+	cookie, _ := platform["cookie"].(string)
+	x_xsrf_token, _ := platform["x_xsrf_token"].(string)
+	x_xsrf_token_url, _ := platform["x_xsrf_token_url"].(string)
+
+	url := fmt.Sprintf("https://app-apac.siteminder.com/web/extranet/reloaded/hoteliers/%s/reservations", oldSIMAccommodationId)
 	reqBodyStr := fmt.Sprintf("{\"dateType\":\"checkout\",\"orderBy\":{\"columnName\":\"dateCreated\",\"order\":\"asc\"},\"reservationStatus\":{},\"channels\":{},\"fromDate\":\"%s\",\"toDate\":\"%s\",\"offset\":0}", dateFrom, dateTo)
 	jsonReqBody := []byte(reqBodyStr)
-
 	if err := DoRequestAndGetResponse_oldSIM("POST", url, bytes.NewBuffer(jsonReqBody), cookie, x_xsrf_token, x_xsrf_token_url, &ordersData); err != nil {
 		fmt.Println("DoRequestAndGetResponse failed!")
 		fmt.Println("err", err)
 		return
 	}
 
-	// After receiving the first response, run a loop to retrieve all the reservations.
 	total := ordersData.TotalReservations
 	offset := ordersData.Offset
 

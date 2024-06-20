@@ -38,14 +38,10 @@ type GetAirbnbOrderResponseBody struct {
 
 func GetAirbnb(platform map[string]interface{}, dateFrom, dateTo string) {
 	var result string
-	var resultData []ReservationsDB
 	var data ReservationsDB
+	var resultData []ReservationsDB
 
-	cookie, ok := platform["cookie"].(string)
-	if !ok {
-		fmt.Println("无法获取 cookie")
-	}
-
+	cookie, _ := platform["cookie"].(string)
 	// 往前一個月
 	dateFromStr, _ := time.Parse("2006-01-02", dateFrom)
 	oneMonthAgo := dateFromStr.AddDate(0, -1, 0)

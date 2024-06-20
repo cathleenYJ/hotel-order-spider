@@ -132,22 +132,16 @@ type GetAgodaOrderDetailsResponseBody struct {
 
 func GetAgoda(platform map[string]interface{}, dateFrom, dateTo, agodaAccommodationId string) {
 
-	cookie, ok := platform["cookie"].(string)
-	if !ok {
-		fmt.Println("cookie error")
-	}
-
-	url := fmt.Sprintf("https://ycs.agoda.com/zh-tw/%s/kipp/api/hotelBookingApi/Get", agodaAccommodationId)
-
 	var resultData []ReservationsDB
 	var ordersData GetAgodaOrderResponseBody
 
+	cookie, _ := platform["cookie"].(string)
 	startDateTime, _ := time.Parse("2006-01-02", dateFrom)
 	endDateTime, _ := time.Parse("2006-01-02", dateTo)
-
 	startDateUnixTime := startDateTime.UnixMilli()
 	endDateUnixTime := endDateTime.UnixMilli()
 
+	url := fmt.Sprintf("https://ycs.agoda.com/zh-tw/%s/kipp/api/hotelBookingApi/Get", agodaAccommodationId)
 	if err := PostForAgodaReservations(url, startDateUnixTime, endDateUnixTime, cookie, &ordersData); err != nil {
 		return
 	}

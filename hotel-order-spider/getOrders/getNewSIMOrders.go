@@ -48,35 +48,26 @@ type GetSiteOrderResponseBody struct {
 
 func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo, newSIMAccommodationId string) {
 	var result string
+	var data ReservationsDB
+	var resultData []ReservationsDB
+	var ordersData GetSiteOrderResponseBody
 
-	cookie, ok := platform["cookie"].(string)
-	if !ok {
-		fmt.Println("cookie error")
-	}
-	x_xsrf_token, ok := platform["x_xsrf_token"].(string)
-	if !ok {
-		fmt.Println("x-xsrf-token error")
-	}
+	cookie, _ := platform["cookie"].(string)
+	x_xsrf_token, _ := platform["x_xsrf_token"].(string)
 
 	url := `https://platform.siteminder.com/api/cm-beef/graphql`
-
-	var resultData []ReservationsDB
 	requestJSON := `{"operationName":"getReservationsSearch","variables":{"spid":"` + newSIMAccommodationId + `","filters":{"checkOutDateRange":{"startDate":"` + dateFrom + `","endDate":"` + dateTo + `"}},"pagination":{"page":1,"pageSize":2000,"sortBy":"checkOutDate","sortOrder":"asc"}},"query":"query getReservationsSearch($spid: ID!, $filters: PlatformReservationsFilterInput, $pagination: PlatformReservationsPaginationInput) {\n  hotel(spid: $spid) {\n    spid\n    platformReservations(filters: $filters, pagination: $pagination) {\n      results {\n        uuid\n        sourceId\n        smPlatformReservationId\n        channel {\n          code\n          name\n          __typename\n        }\n        fromDate\n        toDate\n        checkOutDate\n        channelCreatedAt\n        currency\n        totalAmount {\n          amountAfterTax\n          amountBeforeTax\n          __typename\n        }\n        roomStays {\n          cmRoomRateUuid\n          cmChannelRoomRateUuid\n          roomName\n          numberOfAdults\n          numberOfChildren\n          numberOfInfants\n          guests {\n            companyName\n            firstName\n            middleName\n            lastName\n            __typename\n          }\n          __typename\n        }\n        guests {\n          companyName\n          firstName\n          middleName\n          lastName\n          __typename\n        }\n        profiles {\n          companyName\n          firstName\n          middleName\n          lastName\n          __typename\n        }\n        type\n        pmsDeliveryStatus\n        pmsLastSentAt\n        __typename\n      }\n      sortBy\n      sortOrder\n      page\n      pageSize\n      total\n      __typename\n    }\n    __typename\n  }\n}\n"}`
-
 	if err := DoRequestAndGetResponse_sit("POST", url, strings.NewReader(requestJSON), cookie, x_xsrf_token, &result); err != nil {
 		fmt.Println("DoRequestAndGetResponse failed!")
 		fmt.Println("err", err)
 		return
 	}
-
-	var ordersData GetSiteOrderResponseBody
 	err := json.Unmarshal([]byte(result), &ordersData)
 	if err != nil {
 		fmt.Println("JSON解碼錯誤:", err)
 		return
 	}
 
-	var data ReservationsDB
 	for _, reservation := range ordersData.Data.Hotel.PlatformReservations.Results {
 		data.BookingId = reservation.SourceId
 
@@ -142,7 +133,6 @@ func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo, newSIMAccommod
 		}
 
 	}
-
 	fmt.Println("resultData", resultData)
 
 	resultDataJSON, err := json.Marshal(resultData)

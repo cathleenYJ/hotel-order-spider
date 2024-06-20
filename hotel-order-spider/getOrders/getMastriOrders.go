@@ -41,11 +41,7 @@ func GetMastri(platform map[string]interface{}, dateFrom, dateTo string) {
 			continue
 		}
 
-		hotelName, ok := hotel["name"].(string)
-		if !ok {
-			fmt.Println("hotel name error")
-			continue
-		}
+		hotelName, _ := hotel["name"].(string)
 		fmt.Printf("hotelName: %s", hotelName)
 
 		url := "http://mrhost.xcodemy.com/api/vendor/getMasterOrders"

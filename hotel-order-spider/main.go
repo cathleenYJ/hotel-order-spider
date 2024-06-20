@@ -139,19 +139,8 @@ type ReservationsDB struct {
 }
 
 func main() {
-	configFiles := []string{
-		// "./config/config_newSIM.yaml",
-		// "./config/config_oldSIM.yaml",
-		// "./config/config_agoda.yaml",
-		// "./config/config_expedia.yaml",
-		// "./config/config_mastri.yaml",
-		// "./config/config_owlting.yaml",
-		// "./config/config_airbnb.yaml",
-		// "./config/config_ctrip.yaml",
-		"./config/config_booking.yaml",
-		// "./config/config_hostelworld.yaml",
-		// "./config/config_traiwan.yaml",
-	}
+	// 讀取 config.yaml
+	selectedConfigFiles := readConfigYaml()
 
 	// 選擇執行方式
 	reader, choice := choiceProcessType()
@@ -168,7 +157,7 @@ func main() {
 		return
 	}
 
-	for _, configFile := range configFiles {
+	for _, configFile := range selectedConfigFiles {
 
 		viper.SetConfigFile(configFile)
 		viper.AddConfigPath(".")
@@ -202,6 +191,47 @@ func main() {
 		}
 
 	}
+}
+
+func readConfigYaml() []string {
+	configMap := map[int]string{
+		1:  "./config/config_booking.yaml",
+		2:  "./config/config_agoda.yaml",
+		3:  "./config/config_expedia.yaml",
+		4:  "./config/config_oldSIM.yaml",
+		5:  "./config/config_newSIM.yaml",
+		6:  "./config/config_owlting.yaml",
+		7:  "./config/config_airbnb.yaml",
+		8:  "./config/config_mastri.yaml",
+		9:  "./config/config_ctrip.yaml",
+		10: "./config/config_hostelworld.yaml",
+		11: "./config/config_traiwan.yaml",
+	}
+
+	fmt.Println()
+	fmt.Println("--> 請選擇要執行的平台 :")
+	fmt.Println("EX:1,2,3")
+	fmt.Println("1: Booking", "2: Agoda", "3: Expedia", "4: OldSIM", "5: NewSIM")
+	fmt.Println("6: Owlting", "7: Airbnb", "8: MastriPMS", "9: Ctrip", "10: Hostelworld", "11: Traiwan")
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
+	selectedNumbers := strings.Split(input, ",")
+
+	selectedConfigFiles := []string{}
+	for _, numberStr := range selectedNumbers {
+		number, err := strconv.Atoi(strings.TrimSpace(numberStr))
+		if err != nil {
+			fmt.Println("輸入格式錯誤，請重新輸入")
+			continue
+		}
+		if configFile, ok := configMap[number]; ok {
+			selectedConfigFiles = append(selectedConfigFiles, configFile)
+		} else {
+			fmt.Println("查無此平台，請重新輸入")
+		}
+	}
+	return selectedConfigFiles
 }
 
 func processAccount(resultDB APIResponse, startIndex int, endIndex int, period string, dateFrom string, dateTo string, numOfHotels int) bool {
@@ -257,8 +287,8 @@ func processAccount(resultDB APIResponse, startIndex int, endIndex int, period s
 
 func choiceProcessType() (*bufio.Reader, string) {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println()
-	fmt.Println("--> 請選擇執行「所有旅館」或是「單一旅館」，1:所有旅館 2:單一旅館 : ")
+	fmt.Println("--> 請選擇執行「所有旅館」或是「單一旅館」 :")
+	fmt.Println("1:所有旅館 2:單一旅館")
 	choice, _ := reader.ReadString('\n')
 	choice = strings.TrimSpace(choice)
 	return reader, choice
@@ -366,7 +396,8 @@ func choiceFunction(choice string, reader *bufio.Reader) (string, int, int, bool
 	var numOfHotels int
 	switch choice {
 	case "1":
-		fmt.Println("--> 請輸入每一梯次要執行幾個旅館，EX:10、20，輸入 0 則代表全部執行: ")
+		fmt.Println("--> 請輸入每一梯次要執行幾個旅館 :")
+		fmt.Println("EX:10、20，輸入 0 則代表全部執行")
 		numOfHotelsInput, _ := reader.ReadString('\n')
 		numOfHotelsInput = strings.TrimSpace(numOfHotelsInput)
 		numOfHotels, _ = strconv.Atoi(numOfHotelsInput)
@@ -376,13 +407,14 @@ func choiceFunction(choice string, reader *bufio.Reader) (string, int, int, bool
 		if numOfHotels == 0 {
 			fmt.Println("將執行所有旅館")
 		} else {
-			fmt.Println("--> 請輸入執行旅館梯次，EX:1、2 : ")
+			fmt.Println("--> 請輸入執行旅館梯次 :")
+			fmt.Println("EX:1、2")
 			input, _ := reader.ReadString('\n')
 			input = strings.TrimSpace(input)
 			batchSize, err := strconv.Atoi(input)
 			if err != nil {
 				fmt.Println("請重新輸入 : ", err)
-				return "", 0, 0, true, numOfHotels
+				os.Exit(1)
 			}
 			if batchSize == 0 {
 				fmt.Println("將執行所有旅館")
@@ -395,16 +427,18 @@ func choiceFunction(choice string, reader *bufio.Reader) (string, int, int, bool
 
 		reqBody = `{"mrhost_id": "","group_id":"","limit": 1000, "page_no": 1}`
 	case "2":
-		fmt.Println("--> 請輸入 mrhost_id，EX:R10001 : ")
+		fmt.Println("--> 請輸入 mrhost_id :")
+		fmt.Println("EX:R10001、R10002")
 		mrhostID, _ := reader.ReadString('\n')
 		mrhostID = strings.TrimSpace(mrhostID)
-		fmt.Println("--> 請輸入 group_id，EX:0、1 : ")
+		fmt.Println("--> 請輸入 group_id :")
+		fmt.Println("EX:0、1")
 		groupID, _ := reader.ReadString('\n')
 		groupID = strings.TrimSpace(groupID)
 		reqBody = fmt.Sprintf(`{"mrhost_id": "%s","group_id":"%s","limit": 1000, "page_no": 1}`, mrhostID, groupID)
 	default:
 		fmt.Println("請重新執行 go run main.go")
-		return "", 0, 0, true, numOfHotels
+		os.Exit(1)
 	}
 	return reqBody, startIndex, endIndex, shouldReturn1, numOfHotels
 }

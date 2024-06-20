@@ -88,66 +88,34 @@ type GetTripEBKOrderResponseBody struct {
 }
 
 func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFrom, dateTo string) {
-	var result string
+
 	var url string
+	var result string
 	var resultChangeHotel string
 
-	cookie, ok := platform["cookie"].(string)
-	if ok {
-		fmt.Printf("Cookie: %s\n", cookie)
-	}
-
+	cookie, _ := platform["cookie"].(string)
 	hotelsRaw, ok := platform["hotel"]
 	if ok {
 		hotels, ok := hotelsRaw.([]interface{})
 		if ok && hotels != nil {
 			for _, hotelRaw := range hotels {
-				hotel, ok := hotelRaw.(map[string]interface{})
-				if !ok || hotel == nil {
-					fmt.Println("無法取得 hotel")
-					continue
-				}
-
-				hotelName, ok := hotel["name"].(string)
-				if !ok {
-					fmt.Println("無法取得 hotel name")
-					continue
-				}
+				hotel, _ := hotelRaw.(map[string]interface{})
+				hotelName, _ := hotel["name"].(string)
 				fmt.Printf("hotelName: %s", hotelName)
 
-				hotelid, ok := hotel["hotelid"].(string)
-				if !ok {
-					fmt.Println("無法取得 hotelid")
-					continue
-				}
+				hotelid, _ := hotel["hotelid"].(string)
 				fmt.Printf("hotelid: %s", hotelid)
 
-				hotelid_pre, ok := hotel["hotelid_pre"].(string)
-				if !ok {
-					fmt.Println("無法取得 hotel hotelid_pre")
-					continue
-				}
+				hotelid_pre, _ := hotel["hotelid_pre"].(string)
 				fmt.Printf("hotelid_pre: %s", hotelid_pre)
 
-				masterhotelid, ok := hotel["masterhotelid"].(string)
-				if !ok {
-					fmt.Println("無法取得 hotel masterhotelid")
-					continue
-				}
+				masterhotelid, _ := hotel["masterhotelid"].(string)
 				fmt.Printf("masterhotelid: %s", masterhotelid)
 
-				batchid, ok := hotel["batchid"].(string)
-				if !ok {
-					fmt.Println("無法取得 hotel batchid")
-					continue
-				}
+				batchid, _ := hotel["batchid"].(string)
 				fmt.Printf("batchid: %s", batchid)
 
-				token, ok := hotel["token"].(string)
-				if !ok {
-					fmt.Println("無法取得 hotel token")
-					continue
-				}
+				token, _ := hotel["token"].(string)
 				fmt.Printf("token: %s", token)
 
 				if accountName != "上海雀の花园民宿" && accountName != "豐豐民宿" {

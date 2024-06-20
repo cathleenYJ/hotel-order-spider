@@ -15,8 +15,8 @@ import (
 )
 
 func GetHostelworld(platform map[string]interface{}, platformName, dateFrom, dateTo string) {
-	var result string
 	var url string
+	var result string
 
 	if hotelsRaw, ok := platform["hotel"]; ok {
 		hotels, ok := hotelsRaw.([]interface{})
@@ -25,23 +25,9 @@ func GetHostelworld(platform map[string]interface{}, platformName, dateFrom, dat
 		}
 
 		for _, hotelRaw := range hotels {
-			hotel, ok := hotelRaw.(map[string]interface{})
-			if !ok || hotel == nil {
-				fmt.Println("無法取得 hotel")
-				continue
-			}
-
-			hotelName, ok := hotel["name"].(string)
-			if !ok {
-				fmt.Println("無法取得 hotel name")
-				continue
-			}
-
-			cookie, ok := hotel["cookie"].(string)
-			if !ok {
-				fmt.Println("無法取得 hotel cookie")
-				continue
-			}
+			hotel, _ := hotelRaw.(map[string]interface{})
+			hotelName, _ := hotel["name"].(string)
+			cookie, _ := hotel["cookie"].(string)
 
 			url = fmt.Sprintf("https://inbox.hostelworld.com/booking/search/date?DateType=departuredate&dateFrom=%s&dateTo=%s", dateFrom, dateTo)
 			if err := DoRequestAndGetResponse("GET", url, http.NoBody, cookie, &result); err != nil {

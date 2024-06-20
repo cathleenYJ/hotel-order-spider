@@ -64,10 +64,9 @@ type GetExpediaReservationsResponseBody struct {
 }
 
 func GetExpedia(platform map[string]interface{}, dateFrom, dateTo, expediaAccommodationId string) {
-	cookie, ok := platform["cookie"].(string)
-	if !ok {
-		fmt.Println("cookie error")
-	}
+	var resultData []ReservationsDB
+
+	cookie, _ := platform["cookie"].(string)
 
 	url := "https://api.expediapartnercentral.com/supply/experience/gateway/graphql"
 	var reqBody GetExpediaReservationsAPIRequestBody
@@ -79,8 +78,6 @@ func GetExpedia(platform map[string]interface{}, dateFrom, dateTo, expediaAccomm
 		fmt.Println("123err:", err)
 		return
 	}
-
-	var resultData []ReservationsDB
 
 	for _, reservation := range ordersData.Data.ReservationSearchV2.ReservationItems {
 		var data ReservationsDB
@@ -123,7 +120,6 @@ func GetExpedia(platform map[string]interface{}, dateFrom, dateTo, expediaAccomm
 
 		resultData = append(resultData, data)
 	}
-
 	fmt.Println("resultData", resultData)
 
 	resultDataJSON, err := json.Marshal(resultData)

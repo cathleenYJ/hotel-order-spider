@@ -85,43 +85,15 @@ type cookieResult struct {
 }
 
 func GetBooking(platform map[string]interface{}, platformName, period, dateFrom, dateTo, bookingAccommodationId, hotelName, mrhostId string) {
-	var result string
 	var url string
+	var result string
 
-	parse, ok := platform["parse"].(string)
-	if !ok {
-		fmt.Println("!!!!!!!!!!!!")
-		fmt.Println("請輸入 parse")
-		fmt.Println("!!!!!!!!!!!!")
-	}
-
-	cookie, ok := platform["cookie"].(string)
-	if !ok {
-		fmt.Println("!!!!!!!!!!!!!")
-		fmt.Println("請輸入 cookie")
-		fmt.Println("!!!!!!!!!!!!!")
-	}
-
-	token, ok := platform["token"].(string)
-	if !ok {
-		fmt.Println("!!!!!!!!!!!!!")
-		fmt.Println("無法取得 token")
-		fmt.Println("!!!!!!!!!!!!!")
-	}
-
+	parse, _ := platform["parse"].(string)
+	cookie, _ := platform["cookie"].(string)
+	token, _ := platform["token"].(string)
 	session := GetBookingSessionID(cookie)
-
-	dateFromTime, err := time.Parse("2006-01-02", dateFrom)
-	if err != nil {
-		fmt.Println("日期解析錯誤:", err)
-		return
-	}
-
-	dateToTime, err := time.Parse("2006-01-02", dateTo)
-	if err != nil {
-		fmt.Println("日期解析錯誤:", err)
-		return
-	}
+	dateFromTime, _ := time.Parse("2006-01-02", dateFrom)
+	dateToTime, _ := time.Parse("2006-01-02", dateTo)
 
 	// 檢查 cookie、token 是否過期
 	reqBody := `{"hotel_id": "5393471","cookie":"` + cookie + `","session":"` + session + `"}`
@@ -138,6 +110,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
 		fmt.Println("! 請更新 cookie、token!")
 		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+		fmt.Println()
 		os.Exit(1)
 	}
 
@@ -161,12 +134,13 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 
 			// 解碼JSON
 			var ordersData GetBookingReservationResponseBody
-			err = json.Unmarshal([]byte(result), &ordersData)
+			err := json.Unmarshal([]byte(result), &ordersData)
 			if err != nil {
 				fmt.Println("JSON解碼錯誤:", err)
 				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
 				fmt.Println("! 請更新 cookie、token!")
 				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+				fmt.Println()
 				os.Exit(1)
 			}
 

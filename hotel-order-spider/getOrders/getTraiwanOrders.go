@@ -42,8 +42,8 @@ type RoomInfo struct {
 }
 
 func GetTraiwan(platform map[string]interface{}, dateFrom, dateTo string) {
-	var result string
 	var url string
+	var result string
 
 	hotels, ok := platform["hotel"].([]interface{})
 	if !ok || hotels == nil {
@@ -56,28 +56,13 @@ func GetTraiwan(platform map[string]interface{}, dateFrom, dateTo string) {
 			fmt.Println("無法取得 hotel")
 			continue
 		}
-
-		hotelName, ok := hotel["name"].(string)
-		if !ok {
-			fmt.Println("無法取得 hotel name")
-			continue
-		}
-		cookie, ok := hotel["cookie"].(string)
-		if !ok {
-			fmt.Println("aaaa無法取得 cookie")
-			continue
-		}
-		hotelId, ok := hotel["hotelid"].(string)
-		if !ok {
-			fmt.Println("無法取得 hotel id")
-			continue
-		}
-
+		hotelName, _ := hotel["name"].(string)
+		cookie, _ := hotel["cookie"].(string)
+		hotelId, _ := hotel["hotelid"].(string)
 		fmt.Printf("Hotel Name: %s, Hotel ID: %s\n", hotelName, hotelId)
 
 		url = "https://traiwan.com/place/accommodation/butler/order/search/ajax/search.php"
 		rawbody := `criteria_xml=%3Ccriteria%3E%3Cid%3E%3C%2Fid%3E%3Cname%3E%3C%2Fname%3E%3Cphone%3E%3C%2Fphone%3E%3Cemail%3E%3C%2Femail%3E%3Cbirthday%3E%3C%2Fbirthday%3E%3Cssn%3E%3C%2Fssn%3E%3Cnotice%3E%3C%2Fnotice%3E%3Cstay_date%3E%3Cbeginning_date%3E` + dateFrom + `%3C%2Fbeginning_date%3E%3Cending_date%3E` + dateTo + `%3C%2Fending_date%3E%3C%2Fstay_date%3E%3Creservation_date%3E%3Cbeginning_date%3E%3C%2Fbeginning_date%3E%3Cending_date%3E%3C%2Fending_date%3E%3C%2Freservation_date%3E%3Croom_types%3E%3C%2Froom_types%3E%3Cstatus%3E%3C%2Fstatus%3E%3Corder_filter%3EACTIVE_ORDER_ONLY%3C%2Forder_filter%3E%3Cprice%3E%3Cbeginning_price%3E%3C%2Fbeginning_price%3E%3Cending_price%3E%3C%2Fending_price%3E%3C%2Fprice%3E%3Cdown_payment_type%3E%3C%2Fdown_payment_type%3E%3Csource%3E%3C%2Fsource%3E%3C%2Fcriteria%3E&page=1&rows_per_page=30`
-
 		if err := DoRequestAndGetResponse_trai("POST", url, strings.NewReader(rawbody), cookie, &result); err != nil {
 			fmt.Println("DoRequestAndGetResponse failed!")
 			fmt.Println("err", err)

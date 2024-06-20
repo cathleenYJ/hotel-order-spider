@@ -63,24 +63,21 @@ type RoomInfo_owl struct {
 }
 
 func GetOwlting(platform map[string]interface{}, dateFrom, dateTo, owltingAccommodationId string) {
-	var result string
 	var url string
+	var result string
+	var data ReservationsDB
+	var resultData []ReservationsDB
+	var ordersData GetOwltingOrderResponseBody
 
-	cookie, ok := platform["cookie"].(string)
-	if !ok {
-		fmt.Println("無法取得 cookie")
-	}
+	cookie, _ := platform["cookie"].(string)
 
 	url = `https://www.owlting.com/booking/v2/admin/hotels/` + owltingAccommodationId + `/orders/calendar_list?lang=zh_TW&limit=1000&page=1&during_checkout_date=` + dateFrom + `,` + dateTo + `&order_by=id&sort_by=asc`
-
 	fmt.Println("1.")
 	if err := DoRequestAndGetResponse_owl("GET", url, http.NoBody, cookie, &result); err != nil {
 		fmt.Println("DoRequestAndGetResponse failed!")
 		fmt.Println("err", err)
 		return
 	}
-
-	var ordersData GetOwltingOrderResponseBody
 	err := json.Unmarshal([]byte(result), &ordersData)
 	if err != nil {
 		fmt.Println("JSON解碼錯誤:", err)
@@ -88,9 +85,6 @@ func GetOwlting(platform map[string]interface{}, dateFrom, dateTo, owltingAccomm
 	}
 	pageCount := ordersData.Pagination.Total_pages
 	fmt.Println("pageCount:", pageCount)
-
-	var resultData []ReservationsDB
-	var data ReservationsDB
 
 	for _, reservation := range ordersData.Data {
 		url = `https://www.owlting.com/booking/v2/admin/hotels/` + owltingAccommodationId + `/orders/` + reservation.Order_serial + `/detail?lang=zh_TW`
