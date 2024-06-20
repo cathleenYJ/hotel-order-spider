@@ -142,8 +142,8 @@ func main() {
 	// 讀取 config.yaml
 	selectedConfigFiles := readConfigYaml()
 
-	reqBody := `{"mrhost_id": "","group_id":"0","limit": 1000, "page_no": 1}`
 	// 取得旅館資訊
+	reqBody := `{"mrhost_id": "","group_id":"0","limit": 1000, "page_no": 1}`
 	resultDB, shouldReturn := getHotelInfoFunction(reqBody)
 	if shouldReturn {
 		return
@@ -160,15 +160,13 @@ func main() {
 
 		viper.SetConfigFile(configFile)
 		viper.AddConfigPath(".")
-
 		if err := viper.ReadInConfig(); err != nil {
 			fmt.Println("Error reading config file:", err)
 			return
 		}
 
-		period := viper.GetString("period")
-
 		// period轉為時間
+		period := viper.GetString("period")
 		timeFormat := "2006-01"
 		startTime, err := time.Parse(timeFormat, period)
 		if err != nil {
@@ -178,7 +176,6 @@ func main() {
 
 		// 設定 dateFrom
 		dateFrom := startTime.Format("2006-01-02")
-
 		// 設定 dateTo
 		lastDayOfMonth := startTime.AddDate(0, 1, -1)
 		dateTo := lastDayOfMonth.Format("2006-01-02")
@@ -190,13 +187,7 @@ func main() {
 
 		for _, acc := range accounts {
 			account := acc.(map[string]interface{})
-
-			accountName, ok := account["name"].(string)
-			if !ok {
-				fmt.Println("無法取得 account name")
-				continue
-			}
-
+			accountName, _ := account["name"].(string)
 			fmt.Printf("accountName: %s\n", accountName)
 
 			if platformRaw, ok := account["platform"]; ok {
@@ -213,12 +204,7 @@ func main() {
 						continue
 					}
 
-					platformName, ok := platform["name"].(string)
-					if !ok {
-						fmt.Println("無法取得 platform name")
-						continue
-					}
-
+					platformName, _ := platform["name"].(string)
 					fmt.Printf("platformName: %s\n", platformName)
 
 					// 執行所有旅館

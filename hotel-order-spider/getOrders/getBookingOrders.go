@@ -214,7 +214,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 				fmt.Println("! 當日總金額不一致，請重新執行 !")
 				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-				fmt.Println("totalAmount,countAmount", totalAmount, "/", countAmount)
+				fmt.Println("countAmount / totalAmount", countAmount, "/", totalAmount)
 
 				file.AppendToFile("booking_API_orders.txt", bookingAccommodationId+"\t"+data.BookingId+"\t"+currentDateString+"當日總金額不一致\n")
 				os.Exit(1)
@@ -224,11 +224,11 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 						fmt.Println("當日無訂單")
 					} else {
 						fmt.Println("當日無訂單，且金額一致")
-						fmt.Println("totalAmount,countAmount", totalAmount, "/", countAmount)
+						fmt.Println("countAmount / totalAmount", countAmount, "/", totalAmount)
 					}
 				} else {
 					fmt.Println("當日總金額一致")
-					fmt.Println("totalAmount,countAmount", totalAmount, "/", countAmount)
+					fmt.Println("countAmount / totalAmount", countAmount, "/", totalAmount)
 				}
 			}
 			time.Sleep(3 * time.Second)
