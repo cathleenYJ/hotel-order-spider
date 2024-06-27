@@ -137,9 +137,9 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 			err := json.Unmarshal([]byte(result), &ordersData)
 			if err != nil {
 				fmt.Println("JSON解碼錯誤:", err)
-				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
-				fmt.Println("! 請更新 cookie、token!")
-				fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+				fmt.Println("!!!!!!!!!!!!!!!!!!!!")
+				fmt.Println("! 請從此旅館重新執行 !")
+				fmt.Println("!!!!!!!!!!!!!!!!!!!!")
 				fmt.Println()
 				os.Exit(1)
 			}
