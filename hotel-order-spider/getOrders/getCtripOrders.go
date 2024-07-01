@@ -28,6 +28,27 @@ type GetTripVCCOrderResponseBody struct {
 	} `json:"data"`
 }
 
+type TripWithdrawnPrePaidData struct {
+	Data struct {
+		PageIndex   int                                        `json:"pageIndex"`
+		TotalPage   int                                        `json:"totalPage"`
+		PageSize    int                                        `json:"pageSize"`
+		TotalRecord int                                        `json:"totalRecord"`
+		DataList    []GetTripWithdrawnPrePaidOrderResponseBody `json:"dataList"`
+	} `json:"data"`
+}
+
+type GetTripWithdrawnPrePaidOrderResponseBody struct {
+	OrderId         string  `json:"orderId"`
+	HotelId         int     `json:"hotelId"`
+	ClientName      string  `json:"clientName"`
+	Eta             string  `json:"eta"`
+	Etd             string  `json:"etd"`
+	Quantity        int     `json:"quantity"`
+	Currency        string  `json:"currency"`
+	SettlementPrice float64 `json:"settlementPrice"`
+}
+
 type TripPrePaidData struct {
 	Data struct {
 		PageIndex   int                               `json:"pageIndex"`
@@ -39,14 +60,14 @@ type TripPrePaidData struct {
 }
 
 type GetTripPrePaidOrderResponseBody struct {
-	OrderId         string  `json:"orderId"`
-	HotelId         int     `json:"hotelId"`
-	ClientName      string  `json:"clientName"`
-	Eta             string  `json:"eta"`
-	Etd             string  `json:"etd"`
-	Quantity        int     `json:"quantity"`
-	Currency        string  `json:"currency"`
-	SettlementPrice float64 `json:"settlementPrice"`
+	OrderId    string  `json:"orderId"`
+	HotelId    int     `json:"hotelId"`
+	ClientName string  `json:"clientName"`
+	Eta        string  `json:"etaStr"`
+	Etd        string  `json:"etdStr"`
+	Quantity   int     `json:"quantity"`
+	Currency   string  `json:"currency"`
+	OrderPrice float64 `json:"orderPrice"`
 }
 
 type TripPaidData struct {
@@ -259,7 +280,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 								var resultData []ReservationsDB
 
 								// 解碼JSON
-								var ordersData TripPrePaidData
+								var ordersData TripWithdrawnPrePaidData
 								err := json.Unmarshal([]byte(result), &ordersData)
 								if err != nil {
 									fmt.Println("JSON解碼錯誤:", err)
@@ -337,7 +358,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 								}
 								fmt.Println("change hotel success!")
 
-								url = "https://ebooking.ctrip.com/restapi/soa2/29140/getPrepayOrders?_fxpcqlniredt=09031111118208455165&x-traceID=09031111118208455165-1706177694881-1207637"
+								url = "https://ebooking.ctrip.com/restapi/soa2/29140/getPrepayUncollectedOrders?_fxpcqlniredt=09031043311840621561&x-traceID=09031043311840621561-1719809437718-6887579"
 								reqBodyStr := fmt.Sprintf("{\"hotelId\":%v,\"orderId\":\"\",\"startETA\":\"\",\"endETA\":\"\",\"startETD\":\"%s\",\"endETD\":\"%s\",\"startInputTime\":\"\",\"endInputTime\":\"\",\"startFinishTime\":\"\",\"endFinishTime\":\"\",\"isShortRent\":false,\"tabType\":1,\"pageIndex\":1,\"pageSize\":500}", hotelid_pre, dateFrom, dateTo)
 								jsonReqBody := []byte(reqBodyStr)
 
@@ -366,7 +387,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 									if _, ok := priceMap[bookingID]; !ok {
 										priceMap[bookingID] = 0
 									}
-									priceMap[bookingID] += reservation.SettlementPrice
+									priceMap[bookingID] += reservation.OrderPrice
 								}
 
 								var data ReservationsDB

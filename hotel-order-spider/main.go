@@ -248,12 +248,13 @@ func readConfigYaml() []string {
 		number, err := strconv.Atoi(strings.TrimSpace(numberStr))
 		if err != nil {
 			fmt.Println("輸入格式錯誤，請重新輸入")
-			continue
+			os.Exit(1)
 		}
 		if configFile, ok := configMap[number]; ok {
 			selectedConfigFiles = append(selectedConfigFiles, configFile)
 		} else {
 			fmt.Println("查無此平台，請重新輸入")
+			os.Exit(1)
 		}
 	}
 	return selectedConfigFiles
