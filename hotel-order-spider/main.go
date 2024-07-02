@@ -302,30 +302,30 @@ func processPlatform(bookingAccommodationId string, platformName string, platfor
 	}
 	if agodaAccommodationId != "" {
 		if platformName == "Agoda" {
-			getOrders.GetAgoda(platform, dateFrom, dateTo, agodaAccommodationId)
+			getOrders.GetAgoda(platform, dateFrom, dateTo, agodaAccommodationId, hotelName, mrhostId)
 		}
 	}
 	if expediaAccommodationId != "" {
 		if platformName == "Expedia" {
-			getOrders.GetExpedia(platform, dateFrom, dateTo, expediaAccommodationId)
+			getOrders.GetExpedia(platform, dateFrom, dateTo, expediaAccommodationId, hotelName, mrhostId)
 		}
 	}
 
 	if oldSIMAccommodationId != "" {
 		if platformName == "OldSIM" {
-			getOrders.GetOldSIM(platform, dateFrom, dateTo, oldSIMAccommodationId)
+			getOrders.GetOldSIM(platform, dateFrom, dateTo, oldSIMAccommodationId, hotelName, mrhostId)
 		}
 	}
 
 	if newSIMAccommodationId != "" {
 		if platformName == "NewSIM" {
-			getOrders.GetNewSIM(platform, dateFrom, dateTo, newSIMAccommodationId)
+			getOrders.GetNewSIM(platform, dateFrom, dateTo, newSIMAccommodationId, hotelName, mrhostId)
 		}
 	}
 
 	if owltingAccommodationId != "" {
 		if platformName == "Owlting" {
-			getOrders.GetOwlting(platform, dateFrom, dateTo, owltingAccommodationId)
+			getOrders.GetOwlting(platform, dateFrom, dateTo, owltingAccommodationId, hotelName, mrhostId)
 		}
 	}
 }

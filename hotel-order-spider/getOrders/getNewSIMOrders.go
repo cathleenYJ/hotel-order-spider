@@ -46,7 +46,12 @@ type GetSiteOrderResponseBody struct {
 	} `json:"data"`
 }
 
-func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo, newSIMAccommodationId string) {
+func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo, newSIMAccommodationId, hotelName, mrhostId string) {
+
+	fmt.Println()
+	fmt.Println(hotelName, mrhostId, newSIMAccommodationId)
+	fmt.Println()
+
 	var result string
 	var data ReservationsDB
 	var resultData []ReservationsDB
@@ -131,7 +136,7 @@ func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo, newSIMAccommod
 		if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "Expedia" && data.Platform != "Trip.com(Old)" && data.Platform != "Trip.com (Old)" && data.Platform != "Hostelworld Group" {
 			resultData = append(resultData, data)
 		}
-
+		time.Sleep(1 * time.Second)
 	}
 	fmt.Println("resultData", resultData)
 

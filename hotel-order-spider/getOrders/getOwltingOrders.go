@@ -62,7 +62,11 @@ type RoomInfo_owl struct {
 	Count    int
 }
 
-func GetOwlting(platform map[string]interface{}, dateFrom, dateTo, owltingAccommodationId string) {
+func GetOwlting(platform map[string]interface{}, dateFrom, dateTo, owltingAccommodationId, hotelName, mrhostId string) {
+
+	fmt.Println()
+	fmt.Println(hotelName, mrhostId, owltingAccommodationId)
+
 	var url string
 	var result string
 	var data ReservationsDB

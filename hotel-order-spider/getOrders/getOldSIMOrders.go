@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -39,8 +40,12 @@ type GetOldSIMOrderResponseBody struct {
 	} `json:"reservations"`
 }
 
-func GetOldSIM(platform map[string]interface{}, dateFrom, dateTo, oldSIMAccommodationId string) {
-	var result string
+func GetOldSIM(platform map[string]interface{}, dateFrom, dateTo, oldSIMAccommodationId, hotelName, mrhostId string) {
+
+	fmt.Println()
+	fmt.Println(hotelName, mrhostId, oldSIMAccommodationId)
+	fmt.Println()
+
 	var resultData []ReservationsDB
 	var ordersData GetOldSIMOrderResponseBody
 
@@ -59,10 +64,11 @@ func GetOldSIM(platform map[string]interface{}, dateFrom, dateTo, oldSIMAccommod
 
 	total := ordersData.TotalReservations
 	offset := ordersData.Offset
+	count := 0
 
-	fmt.Println("total,offset", total, offset)
 	for offset < total {
-		fmt.Println(" inner total,offset", total, offset)
+		fmt.Println("offset / total : ", offset, " / ", total)
+		fmt.Println("")
 		// Send a request.
 		reqBodyStr := fmt.Sprintf("{\"dateType\":\"checkout\",\"orderBy\":{\"columnName\":\"dateCreated\",\"order\":\"asc\"},\"reservationStatus\":{},\"channels\":{},\"fromDate\":\"%s\",\"toDate\":\"%s\",\"offset\":%d}", dateFrom, dateTo, offset)
 		jsonReqBody := []byte(reqBodyStr)
@@ -72,18 +78,13 @@ func GetOldSIM(platform map[string]interface{}, dateFrom, dateTo, oldSIMAccommod
 			return
 		}
 
-		fmt.Println("result", result)
-
 		for _, reservation := range ordersData.Reservations {
 			var data ReservationsDB
 			data.Platform = reservation.ChannelName
 			data.GuestName = reservation.Guest.FirstName + " " + reservation.Guest.LastName
 
 			// 解析時間字串為時間格式
-			t, err := time.Parse(time.RFC3339, reservation.CreatedAt)
-			if err != nil {
-				fmt.Println("Parse error:", err)
-			}
+			t, _ := time.Parse(time.RFC3339, reservation.CreatedAt)
 			// 格式化時間為日期格式（YYYY-MM-DD）
 			data.BookDate = t.Format("2006-01-02")
 
@@ -120,11 +121,16 @@ func GetOldSIM(platform map[string]interface{}, dateFrom, dateTo, oldSIMAccommod
 			if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "Expedia" && data.Platform != "Trip.com(Old)" && data.Platform != "Trip.com (Old)" && data.Platform != "Hostelworld Group" {
 				resultData = append(resultData, data)
 			}
-
+			count += 1
 		}
 
-		fmt.Println("resultData", resultData)
+		offset += 15
+		time.Sleep(1 * time.Second)
+	}
 
+	if len(resultData) > 0 {
+		fmt.Println("resultData", resultData)
+		fmt.Println("")
 		resultDataJSON, err := json.Marshal(resultData)
 		if err != nil {
 			fmt.Println("JSON 轉換錯誤:", err)
@@ -132,14 +138,23 @@ func GetOldSIM(platform map[string]interface{}, dateFrom, dateTo, oldSIMAccommod
 		}
 
 		var resultDB string
-		// 將資料存入DB
 		apiurl := `http://149.28.24.90:8893/revenue_reservation/setParseHtmlToDB`
 		if err := DoRequestAndGetResponse("POST", apiurl, bytes.NewBuffer(resultDataJSON), cookie, &resultDB); err != nil {
 			fmt.Println("setParseHtmlToDB failed!")
 			return
 		}
-		fmt.Println("resultDB:", resultDB)
-		offset += 15
+	}
+
+	if count != total {
+		fmt.Println("count / total : ", count, " / ", total)
+		fmt.Println("")
+		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		fmt.Println("!資料筆數不一致，請重新執行此旅館!")
+		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		os.Exit(1)
+	} else {
+		fmt.Println("count / total : ", count, " / ", total)
+		fmt.Println("")
 	}
 }
 

@@ -130,7 +130,11 @@ type GetAgodaOrderDetailsResponseBody struct {
 	} `json:"Data"`
 }
 
-func GetAgoda(platform map[string]interface{}, dateFrom, dateTo, agodaAccommodationId string) {
+func GetAgoda(platform map[string]interface{}, dateFrom, dateTo, agodaAccommodationId, hotelName, mrhostId string) {
+
+	fmt.Println()
+	fmt.Println(hotelName, mrhostId, agodaAccommodationId)
+	fmt.Println()
 
 	var resultData []ReservationsDB
 	var ordersData GetAgodaOrderResponseBody
@@ -170,9 +174,8 @@ func GetAgoda(platform map[string]interface{}, dateFrom, dateTo, agodaAccommodat
 			return
 		}
 
+		fmt.Println("reservation.BookingID", reservation.BookingID)
 		wg.Add(1)
-
-		defer timeTrack(time.Now(), "ArrangeReservationData")
 		defer wg.Done()
 
 		var arrangedData ReservationsDB
@@ -224,6 +227,8 @@ func GetAgoda(platform map[string]interface{}, dateFrom, dateTo, agodaAccommodat
 				messages = messages + message.MessageProperty + "\n"
 			}
 			arrangedData.GuestRequest = messages
+
+			time.Sleep(1 * time.Second)
 		}
 		resultData = append(resultData, arrangedData)
 	}
@@ -248,8 +253,6 @@ func GetAgoda(platform map[string]interface{}, dateFrom, dateTo, agodaAccommodat
 }
 
 func PostForAgodaReservations(postUrl string, startDate int64, endDate int64, cookie string, resBody interface{}) error {
-
-	defer timeTrack(time.Now(), "PostForReservations") // set function timer
 
 	urlData := url.Values{}
 	urlData.Set("UseCheckinDate", "true")
@@ -280,8 +283,6 @@ func PostForAgodaReservations(postUrl string, startDate int64, endDate int64, co
 }
 
 func PostForAgodaReservationsDetails(postUrl string, bookingId int64, cookie string, resBody interface{}, wg *sync.WaitGroup) error {
-
-	defer timeTrack(time.Now(), "PostForReservationsDetails") // set function timer
 	defer wg.Done()
 
 	urlData := url.Values{}
@@ -308,9 +309,4 @@ func PostForAgodaReservationsDetails(postUrl string, bookingId int64, cookie str
 
 	defer resp.Body.Close()
 	return nil
-}
-
-func timeTrack(start time.Time, name string) {
-	elapsed := time.Since(start)
-	fmt.Printf("%s took %s   ", name, elapsed)
 }
