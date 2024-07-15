@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"gin/getOrders"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/viper"
 )
 
@@ -233,30 +233,33 @@ func readConfigYaml() []string {
 		11: "./config/config_traiwan.yaml",
 	}
 
-	fmt.Println()
-	fmt.Println("--> 請選擇要執行的平台 :")
-	fmt.Println("EX:1,2,3")
-	fmt.Println("1: Booking", "2: Agoda", "3: Expedia", "4: OldSIM", "5: NewSIM")
-	fmt.Println("6: Owlting", "7: Airbnb", "8: MastriPMS", "9: Ctrip", "10: Hostelworld", "11: Traiwan")
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	selectedNumbers := strings.Split(input, ",")
-
-	selectedConfigFiles := []string{}
-	for _, numberStr := range selectedNumbers {
-		number, err := strconv.Atoi(strings.TrimSpace(numberStr))
-		if err != nil {
-			fmt.Println("輸入格式錯誤，請重新輸入")
-			os.Exit(1)
-		}
-		if configFile, ok := configMap[number]; ok {
-			selectedConfigFiles = append(selectedConfigFiles, configFile)
-		} else {
-			fmt.Println("查無此平台，請重新輸入")
-			os.Exit(1)
-		}
+	// Create a slice for the select labels
+	var labels []string
+	for i := 1; i <= len(configMap); i++ {
+		labels = append(labels, fmt.Sprintf("%d: %s", i, configMap[i]))
 	}
+
+	// Create a new promptui.Select
+	selectPrompt := promptui.Select{
+		Label: "請選擇要執行的平台",
+		Items: labels,
+	}
+
+	// Run the select prompt and capture the selected index
+	_, result, err := selectPrompt.Run()
+
+	if err != nil {
+		fmt.Printf("選擇失敗 %v\n", err)
+		os.Exit(1)
+	}
+
+	// Extract the index from the result
+	var selectedIndex int
+	fmt.Sscanf(result, "%d:", &selectedIndex)
+
+	// Retrieve the selected config file path
+	selectedConfigFiles := []string{configMap[selectedIndex]}
+
 	return selectedConfigFiles
 }
 

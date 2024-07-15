@@ -4,11 +4,13 @@ go 1.21.6
 
 require (
 	github.com/PuerkitoBio/goquery v1.9.1
+	github.com/manifoldco/promptui v0.9.0
 	github.com/spf13/viper v1.18.2
 )
 
 require (
 	github.com/andybalholm/cascadia v1.3.2 // indirect
+	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

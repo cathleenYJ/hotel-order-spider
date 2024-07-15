@@ -96,23 +96,23 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 	dateToTime, _ := time.Parse("2006-01-02", dateTo)
 
 	// 檢查 cookie、token 是否過期
-	reqBody := `{"hotel_id": "5393471","cookie":"` + cookie + `","session":"` + session + `"}`
-	reqData := bytes.NewBufferString(reqBody)
-	var responseData cookieResponse
-	cookieurl := "http://149.28.24.90:8893/revenue_booking/getAllHotelRoomIds"
-	if err := DoRequestAndGetResponse("POST", cookieurl, reqData, "", &responseData); err != nil {
-		fmt.Println("getAllHotelRoomIds failed!", err)
-		return
-	}
+	// reqBody := `{"hotel_id": "5393471","cookie":"` + cookie + `","session":"` + session + `"}`
+	// reqData := bytes.NewBufferString(reqBody)
+	// var responseData cookieResponse
+	// cookieurl := "http://149.28.24.90:8893/revenue_booking/getAllHotelRoomIds"
+	// if err := DoRequestAndGetResponse("POST", cookieurl, reqData, "", &responseData); err != nil {
+	// 	fmt.Println("getAllHotelRoomIds failed!", err)
+	// 	return
+	// }
 
-	if len(responseData.Result) == 0 {
-		fmt.Println()
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
-		fmt.Println("! 請更新 cookie、token!")
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
-		fmt.Println()
-		os.Exit(1)
-	}
+	// if len(responseData.Result) == 0 {
+	// 	fmt.Println()
+	// 	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+	// 	fmt.Println("! 請更新 cookie、token!")
+	// 	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+	// 	fmt.Println()
+	// 	os.Exit(1)
+	// }
 
 	fmt.Println()
 	fmt.Println(hotelName, mrhostId, bookingAccommodationId)
