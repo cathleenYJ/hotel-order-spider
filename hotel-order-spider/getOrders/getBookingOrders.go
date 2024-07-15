@@ -91,7 +91,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 	parse, _ := platform["parse"].(string)
 	cookie, _ := platform["cookie"].(string)
 	token, _ := platform["token"].(string)
-	session := GetBookingSessionID(cookie)
+
 	dateFromTime, _ := time.Parse("2006-01-02", dateFrom)
 	dateToTime, _ := time.Parse("2006-01-02", dateTo)
 
@@ -120,6 +120,8 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 	var resultData []ReservationsDB
 	if parse == "API" {
 		for current := dateFromTime; current.Before(dateToTime) || current.Equal(dateToTime); current = current.AddDate(0, 0, 1) {
+			session := GetBookingSessionID(cookie)
+
 			currentDateString := current.Format("2006-01-02")
 			fmt.Println()
 			fmt.Println("............................................................................................................")
@@ -234,6 +236,8 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 			time.Sleep(3 * time.Second)
 		}
 	} else if parse == "HTML" {
+		session := GetBookingSessionID(cookie)
+
 		/// 財務 訂單明細
 		url = fmt.Sprintf("https://admin.booking.com/hotel/hoteladmin/extranet_ng/manage/finance_reservations.html?ses=%s&hotel_id=%s&period=%s&lang=xt", session, bookingAccommodationId, period)
 		if err := DoRequestAndGetResponse("GET", url, http.NoBody, cookie, &result); err != nil {
