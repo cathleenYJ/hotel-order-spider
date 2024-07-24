@@ -36,8 +36,39 @@ type GetAirbnbOrderResponseBody struct {
 	} `json:"metadata"`
 }
 
+type GetAirbnbPriceResponseBody struct {
+	Data struct {
+		Presentation struct {
+			Typename                 string `json:"__typename"`
+			HostReservationDetailsV2 struct {
+				Typename             string `json:"__typename"`
+				SectionConfiguration struct {
+					Typename      string `json:"__typename"`
+					RootPlacement []struct {
+						Typename    string      `json:"__typename"`
+						SectionID   string      `json:"sectionId"`
+						LoggingData interface{} `json:"loggingData"`
+						SectionData struct {
+							Title         string `json:"title"`
+							TotalLineItem struct {
+								Typename       string `json:"__typename"`
+								Description    string `json:"description"`
+								FormattedPrice string `json:"formattedPrice"`
+							} `json:"totalLineItem"`
+							AirbnbOrgMessage  interface{} `json:"airbnbOrgMessage"`
+							VatInvoiceButtons interface{} `json:"vatInvoiceButtons"`
+							Disclaimer        interface{} `json:"disclaimer"`
+						} `json:"sectionData"`
+					} `json:"rootPlacement"`
+				} `json:"sectionConfiguration"`
+			} `json:"hostReservationDetailsV2"`
+		} `json:"presentation"`
+	} `json:"data"`
+}
+
 func GetAirbnb(platform map[string]interface{}, dateFrom, dateTo string) {
 	var result string
+	var priceResult string
 	var data ReservationsDB
 	var resultData []ReservationsDB
 
@@ -56,6 +87,7 @@ func GetAirbnb(platform map[string]interface{}, dateFrom, dateTo string) {
 	}
 	time.Sleep(1 * time.Second)
 	re := regexp.MustCompile(`(?P<currency>[^\d]+)(?P<amount>[\d,]+(\.\d+)?)`)
+
 	var ordersData GetAirbnbOrderResponseBody
 	err := json.Unmarshal([]byte(result), &ordersData)
 	if err != nil {
@@ -73,29 +105,49 @@ func GetAirbnb(platform map[string]interface{}, dateFrom, dateTo string) {
 			data.GuestName = reservation.Guest_user.Full_name
 			data.CheckInDate = reservation.Start_date
 			data.CheckOutDate = reservation.End_date
+			data.RoomNights = int64(reservation.Night)
 
-			matches := re.FindStringSubmatch(reservation.Earnings)
-			if len(matches) >= 3 {
-				currency := matches[1]
-				amountStr := strings.ReplaceAll(matches[2], ",", "")
-				amount, _ := strconv.ParseFloat(amountStr, 64)
-				data.Price = amount
-				if currency == "$" {
-					data.Currency = "TWD"
-				} else if currency == "RM" {
-					data.Currency = "MYR"
+			priceUrl := `https://www.airbnb.com.tw/api/v3/HostReservationDetailsQuery/eb3b45c860f323e5eb6fad44220a98d441c57c5e9c40e7621cadb002ad86b36f?operationName=HostReservationDetailsQuery&locale=zh-TW&currency=MYR&variables=%7B%22requestSource%22%3A%22RESERVATION_LIST%22%2C%22confirmationCode%22%3A%22` + data.BookingId + `%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22eb3b45c860f323e5eb6fad44220a98d441c57c5e9c40e7621cadb002ad86b36f%22%7D%7D`
+			if err := DoRequestAndGetResponse_airbnbPrice("GET", priceUrl, http.NoBody, cookie, &priceResult); err != nil {
+				fmt.Println("DoRequestAndGetResponse failed!")
+				fmt.Println("err", err)
+				return
+			}
+
+			var priceData GetAirbnbPriceResponseBody
+			err := json.Unmarshal([]byte(priceResult), &priceData)
+			if err != nil {
+				fmt.Println("JSON解码错误:", err)
+				return
+			}
+
+			for _, placement := range priceData.Data.Presentation.HostReservationDetailsV2.SectionConfiguration.RootPlacement {
+				if placement.SectionID == "HOST_PAYOUT_SECTION" {
+					matches := re.FindStringSubmatch(placement.SectionData.TotalLineItem.FormattedPrice)
+					if len(matches) >= 3 {
+						currency := matches[1]
+						amountStr := strings.ReplaceAll(matches[2], ",", "")
+						amount, _ := strconv.ParseFloat(amountStr, 64)
+						data.Price = amount
+						if currency == "$" {
+							data.Currency = "TWD"
+						} else if currency == "RM" {
+							data.Currency = "MYR"
+						}
+					}
+
+					if reservation.User_facing_status_localized == "已確認" || reservation.User_facing_status_localized == "過往房客" || reservation.User_facing_status_localized == "為對方留下評價" || reservation.User_facing_status_localized == "等待房客評價" || reservation.User_facing_status_localized == "為對方留下評價 - 即將過期" {
+						data.ReservationStatus = "已成立"
+					} else if reservation.User_facing_status_localized == "由旅客取消" && data.Price != 0 {
+						data.ReservationStatus = "Chargeable cancellation"
+					} else if reservation.User_facing_status_localized == "由你取消" || (reservation.User_facing_status_localized == "由旅客取消" && data.Price == 0) || (reservation.User_facing_status_localized == "由 Airbnb 取消" && data.Price == 0) {
+						data.ReservationStatus = "已取消"
+					}
+					break
 				}
 			}
 
-			data.RoomNights = int64(reservation.Night)
-
-			if reservation.User_facing_status_localized == "已確認" || reservation.User_facing_status_localized == "過往房客" || reservation.User_facing_status_localized == "為對方留下評價" || reservation.User_facing_status_localized == "等待房客評價" || reservation.User_facing_status_localized == "為對方留下評價 - 即將過期" {
-				data.ReservationStatus = "已成立"
-			} else if reservation.User_facing_status_localized == "由旅客取消" && data.Price != 0 {
-				data.ReservationStatus = "Chargeable cancellation"
-			} else if reservation.User_facing_status_localized == "由你取消" || (reservation.User_facing_status_localized == "由旅客取消" && data.Price == 0) || (reservation.User_facing_status_localized == "由 Airbnb 取消" && data.Price == 0) {
-				data.ReservationStatus = "已取消"
-			}
+			fmt.Println("BookingId:", data.BookingId, data.Price)
 
 			resultData = append(resultData, data)
 		}
@@ -111,6 +163,7 @@ func GetAirbnb(platform map[string]interface{}, dateFrom, dateTo string) {
 			}
 			time.Sleep(1 * time.Second)
 			re := regexp.MustCompile(`(?P<currency>[^\d]+)(?P<amount>[\d,]+(\.\d+)?)`)
+
 			var ordersData GetAirbnbOrderResponseBody
 			err = json.Unmarshal([]byte(result), &ordersData)
 			if err != nil {
@@ -128,29 +181,49 @@ func GetAirbnb(platform map[string]interface{}, dateFrom, dateTo string) {
 					data.GuestName = reservation.Guest_user.Full_name
 					data.CheckInDate = reservation.Start_date
 					data.CheckOutDate = reservation.End_date
+					data.RoomNights = int64(reservation.Night)
 
-					matches := re.FindStringSubmatch(reservation.Earnings)
-					if len(matches) >= 3 {
-						currency := matches[1]
-						amountStr := strings.ReplaceAll(matches[2], ",", "")
-						amount, _ := strconv.ParseFloat(amountStr, 64)
-						data.Price = amount
-						if currency == "$" {
-							data.Currency = "TWD"
-						} else if currency == "RM" {
-							data.Currency = "MYR"
+					priceUrl := `https://www.airbnb.com.tw/api/v3/HostReservationDetailsQuery/eb3b45c860f323e5eb6fad44220a98d441c57c5e9c40e7621cadb002ad86b36f?operationName=HostReservationDetailsQuery&locale=zh-TW&currency=MYR&variables=%7B%22requestSource%22%3A%22RESERVATION_LIST%22%2C%22confirmationCode%22%3A%22` + data.BookingId + `%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22eb3b45c860f323e5eb6fad44220a98d441c57c5e9c40e7621cadb002ad86b36f%22%7D%7D`
+					if err := DoRequestAndGetResponse_airbnbPrice("GET", priceUrl, http.NoBody, cookie, &priceResult); err != nil {
+						fmt.Println("DoRequestAndGetResponse failed!")
+						fmt.Println("err", err)
+						return
+					}
+
+					var priceData GetAirbnbPriceResponseBody
+					err := json.Unmarshal([]byte(priceResult), &priceData)
+					if err != nil {
+						fmt.Println("JSON解码错误:", err)
+						return
+					}
+
+					for _, placement := range priceData.Data.Presentation.HostReservationDetailsV2.SectionConfiguration.RootPlacement {
+						if placement.SectionID == "HOST_PAYOUT_SECTION" {
+							matches := re.FindStringSubmatch(placement.SectionData.TotalLineItem.FormattedPrice)
+							if len(matches) >= 3 {
+								currency := matches[1]
+								amountStr := strings.ReplaceAll(matches[2], ",", "")
+								amount, _ := strconv.ParseFloat(amountStr, 64)
+								data.Price = amount
+								if currency == "$" {
+									data.Currency = "TWD"
+								} else if currency == "RM" {
+									data.Currency = "MYR"
+								}
+							}
+
+							if reservation.User_facing_status_localized == "已確認" || reservation.User_facing_status_localized == "過往房客" || reservation.User_facing_status_localized == "為對方留下評價" || reservation.User_facing_status_localized == "等待房客評價" || reservation.User_facing_status_localized == "為對方留下評價 - 即將過期" {
+								data.ReservationStatus = "已成立"
+							} else if reservation.User_facing_status_localized == "由旅客取消" && data.Price != 0 {
+								data.ReservationStatus = "Chargeable cancellation"
+							} else if reservation.User_facing_status_localized == "由你取消" || (reservation.User_facing_status_localized == "由旅客取消" && data.Price == 0) || (reservation.User_facing_status_localized == "由 Airbnb 取消" && data.Price == 0) {
+								data.ReservationStatus = "已取消"
+							}
+							break
 						}
 					}
 
-					data.RoomNights = int64(reservation.Night)
-
-					if reservation.User_facing_status_localized == "已確認" || reservation.User_facing_status_localized == "過往房客" || reservation.User_facing_status_localized == "為對方留下評價" || reservation.User_facing_status_localized == "等待房客評價" || reservation.User_facing_status_localized == "為對方留下評價 - 即將過期" {
-						data.ReservationStatus = "已成立"
-					} else if reservation.User_facing_status_localized == "由旅客取消" && data.Price != 0 {
-						data.ReservationStatus = "Chargeable cancellation"
-					} else if reservation.User_facing_status_localized == "由你取消" || (reservation.User_facing_status_localized == "由旅客取消" && data.Price == 0) || (reservation.User_facing_status_localized == "由 Airbnb 取消" && data.Price == 0) {
-						data.ReservationStatus = "已取消"
-					}
+					fmt.Println("BookingId:", data.BookingId, "Price", data.Price)
 
 					resultData = append(resultData, data)
 				}
@@ -183,6 +256,47 @@ func DoRequestAndGetResponse_airbnb(method, postUrl string, reqBody io.Reader, c
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("x-airbnb-api-key", "d306zoyjsyarp7ifhu67rjxn52tv0t20")
 	req.Header.Set("Content-Type", "text/html; charset=utf-8")
+
+	req.Header.Set("Cookie", cookie)
+
+	client := &http.Client{Timeout: 40 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	// resBody of type *string is for html
+	switch resBody := resBody.(type) {
+	case *string:
+		// If resBody is a string
+		resBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		*resBody = string(resBytes)
+	default:
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(data, resBody); err != nil {
+			return err
+		}
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+
+func DoRequestAndGetResponse_airbnbPrice(method, postUrl string, reqBody io.Reader, cookie string, resBody any) error {
+	req, err := http.NewRequest(method, postUrl, reqBody)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("x-airbnb-api-key", "d306zoyjsyarp7ifhu67rjxn52tv0t20")
+	req.Header.Set("Content-Type", "application/json")
 
 	req.Header.Set("Cookie", cookie)
 

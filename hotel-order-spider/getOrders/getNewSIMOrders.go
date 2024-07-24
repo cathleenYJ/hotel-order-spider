@@ -20,10 +20,11 @@ type GetSiteOrderResponseBody struct {
 					Channel  struct {
 						Name string `json:"name"`
 					} `json:"channel"`
-					FromDate     string `json:"fromDate"`
-					CheckOutDate string `json:"checkOutDate"`
-					Currency     string `json:"currency"`
-					TotalAmount  struct {
+					FromDate         string `json:"fromDate"`
+					CheckOutDate     string `json:"checkOutDate"`
+					ChannelCreatedAt string `json:"channelCreatedAt"`
+					Currency         string `json:"currency"`
+					TotalAmount      struct {
 						AmountAfterTax float64 `json:"amountAfterTax"`
 					} `json:"totalAmount"`
 					RoomStays []struct {
@@ -95,10 +96,10 @@ func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo, newSIMAccommod
 		}
 
 		var parsedTime time.Time
-		if reservation.PmsLastSentAt == "" {
+		if reservation.ChannelCreatedAt == "" {
 			parsedTime = time.Time{}
 		} else {
-			parsedTime, err = time.Parse(time.RFC3339, reservation.PmsLastSentAt)
+			parsedTime, err = time.Parse(time.RFC3339, reservation.ChannelCreatedAt)
 			if err != nil {
 				fmt.Println("Error parsing time:", err)
 				return
