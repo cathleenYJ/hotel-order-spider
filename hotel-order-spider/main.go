@@ -219,48 +219,58 @@ func main() {
 }
 
 func readConfigYaml() []string {
-	configMap := map[int]string{
-		1:  "./config/config_booking.yaml",
-		2:  "./config/config_agoda.yaml",
-		3:  "./config/config_expedia.yaml",
-		4:  "./config/config_oldSIM.yaml",
-		5:  "./config/config_newSIM.yaml",
-		6:  "./config/config_owlting.yaml",
-		7:  "./config/config_airbnb.yaml",
-		8:  "./config/config_mastri.yaml",
-		9:  "./config/config_ctrip.yaml",
-		10: "./config/config_hostelworld.yaml",
-		11: "./config/config_traiwan.yaml",
-	}
+    platformMap := map[int]string{
+        1: "booking",
+        2: "agoda",
+        3: "expedia",
+        4: "oldSIM",
+        5: "newSIM",
+        6: "owlting",
+        7: "airbnb",
+        8: "mastri",
+        9: "ctrip",
+        10: "hostelworld",
+        11: "traiwan",
+    }
 
-	// Create a slice for the select labels
-	var labels []string
-	for i := 1; i <= len(configMap); i++ {
-		labels = append(labels, fmt.Sprintf("%d: %s", i, configMap[i]))
-	}
+    configPathMap := map[string]string{
+        "booking":     "./config/config_booking.yaml",
+        "agoda":       "./config/config_agoda.yaml",
+        "expedia":     "./config/config_expedia.yaml",
+        "oldSIM":      "./config/config_oldSIM.yaml",
+        "newSIM":      "./config/config_newSIM.yaml",
+        "owlting":     "./config/config_owlting.yaml",
+        "airbnb":      "./config/config_airbnb.yaml",
+        "mastri":      "./config/config_mastri.yaml",
+        "ctrip":       "./config/config_ctrip.yaml",
+        "hostelworld": "./config/config_hostelworld.yaml",
+        "traiwan":     "./config/config_traiwan.yaml",
+    }
 
-	// Create a new promptui.Select
-	selectPrompt := promptui.Select{
-		Label: "請選擇要執行的平台",
-		Items: labels,
-	}
+    // Create a slice for the select labels
+    var labels []string
+    for i := 1; i <= len(platformMap); i++ {
+        labels = append(labels, fmt.Sprintf("%d:%s", i, platformMap[i]))
+    }
 
-	// Run the select prompt and capture the selected index
-	_, result, err := selectPrompt.Run()
+    // Create a new promptui.Select
+    selectPrompt := promptui.Select{
+        Label: "請選擇要執行的平台",
+        Items: labels,
+    }
 
-	if err != nil {
-		fmt.Printf("選擇失敗 %v\n", err)
-		os.Exit(1)
-	}
+    // Run the select prompt and capture the selected index
+    selectedIndex, _, err := selectPrompt.Run()
 
-	// Extract the index from the result
-	var selectedIndex int
-	fmt.Sscanf(result, "%d:", &selectedIndex)
+    if err != nil {
+        fmt.Printf("選擇失敗 %v\n", err)
+        os.Exit(1)
+    }
 
-	// Retrieve the selected config file path
-	selectedConfigFiles := []string{configMap[selectedIndex]}
+    // Retrieve the selected config file path using platformMap and configPathMap
+    selectedConfigFiles := []string{configPathMap[platformMap[selectedIndex+1]]}
 
-	return selectedConfigFiles
+    return selectedConfigFiles
 }
 
 func processAllHotel(resultDB APIResponse, platformName string, platform map[string]interface{}, period string, dateFrom string, dateTo string, startID string, endID string) {
