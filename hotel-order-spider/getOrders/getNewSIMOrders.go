@@ -71,6 +71,7 @@ func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo, newSIMAccommod
 	err := json.Unmarshal([]byte(result), &ordersData)
 	if err != nil {
 		fmt.Println("JSON解碼錯誤:", err)
+		
 		return
 	}
 
@@ -134,10 +135,10 @@ func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo, newSIMAccommod
 		data.HotelId = newSIMAccommodationId
 		data.NumOfRooms = int64(roomStayCount)
 
-		if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "Expedia" && data.Platform != "Trip.com(Old)" && data.Platform != "Trip.com (Old)" && data.Platform != "Hostelworld Group" {
+		if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "Expedia" && data.Platform != "Trip.com(Old)" && data.Platform != "Trip.com (Old)" && data.Platform != "Trip.com(New)" && data.Platform != "Hostelworld Group" {
 			resultData = append(resultData, data)
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 	fmt.Println("resultData", resultData)
 

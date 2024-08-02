@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -171,7 +172,7 @@ func GetAgoda(platform map[string]interface{}, dateFrom, dateTo, agodaAccommodat
 			fmt.Println("!!!!!!!!!!!!!!!")
 			fmt.Println("! 請更新 cookie!")
 			fmt.Println("!!!!!!!!!!!!!!!")
-			return
+			os.Exit(1)
 		}
 
 		fmt.Println("reservation.BookingID", reservation.BookingID)

@@ -1,6 +1,6 @@
-period: "2024-06"
+period: "2024-07"
 account:
   - name: "mrhost"
     platform:
       - name: "Owlting"
-        cookie: "__stripe_mid=7d23e151-7011-4e2a-9ad1-95805b207265799d7c; fcView=timelineSevenDays; owlnest_admin_refresh_token=3227994ff7e5ccd12b654657107ee0a80c4b8042562f4e36008688277924acfc; owlnest_admin_token=3227994ff7e5ccd12b654657107ee0a8fd1bec60d0134f97808f42f7ea365b99; lang=zh_TW; owlnest_admin_dialog={%22lastLogin%22:%222024-05-01%22%2C%22hotelId%22:3614%2C%22userId%22:8695%2C%22dialog%22:{}}; __stripe_sid=9cb01b91-47cd-4b97-97d4-2ee1d83b5adc4f085c; owlnest_booking_engine_api_session=eyJpdiI6IkhJY2M0WWxsUkVJdnEyZkg3QktKc3c9PSIsInZhbHVlIjoiYzFcL2dHNGY2WjBjWGxVSk11OXg0NFVSb1NqZVZiREZQOUhUMWxNTmZKV1BlNnFwXC9KQlwvalVRSlZUb2FhYjYxZGZ5K25TRU5YUldERVBIM3VubzNWeWtCblJORmJ2Y1ZITkVVOVdBdXN5UlpvMGRhU2RsVDVaTUxLbDNaWmhDOFYiLCJtYWMiOiI4OTk1NWU0N2FlOTk4MTg0M2EwMmU3YWJhZDk4MjNhYzQ4YWIwYzkzZWRlMGU0MzYwZGIwOWI2OTVlZWM4NDk0In0%3D"
+        cookie: "__stripe_mid=7d23e151-7011-4e2a-9ad1-95805b207265799d7c; fcView=timelineSevenDays; owlnest_admin_refresh_token=336e5e03795240579d4888b54d3ea1d64f0d39d15062aecddc0f84fc12bb9535; owlnest_admin_token=336e5e03795240579d4888b54d3ea1d658e24ea81969d8e1f3ddee989f2306ec; lang=zh_TW; owlnest_admin_dialog={%22lastLogin%22:%222024-08-01%22%2C%22hotelId%22:3614%2C%22userId%22:8695%2C%22dialog%22:{}}; __stripe_sid=02c61820-5149-421e-a118-4a6359d1e9b1fdd120; owlnest_booking_engine_api_session=eyJpdiI6Im1QMWtMXC9EM3NUVXdiZU5QSVNqKzhRPT0iLCJ2YWx1ZSI6IkFFZ0ZBYWxYWVlmQSs3TExROGNScmFHZVBQU0ZXcmlEVEpsMWtDMzNMMkJ4d1c0R2swNUFVK0gzMlZrRmVNcDI3djY3eDVoQ001TGpYdG9RVkxxMmR3RlN1c3VDb0RiWlJWS0k5SjdHVTBvQ2Y4R2lRWlBNSE9GQjZPelVGN2x3IiwibWFjIjoiODM2YjU3ZGNhZDE2YzhjZDU0MzlkODM4MTYzZTk2MWZhYTI5ZGI0NjFiYTBkZTM3YThlNzhmZDc4OWE4YzllOCJ9"

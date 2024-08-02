@@ -118,7 +118,7 @@ func GetOldSIM(platform map[string]interface{}, dateFrom, dateTo, oldSIMAccommod
 				fmt.Println("data.BookingId", data.BookingId)
 			}
 
-			if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "Expedia" && data.Platform != "Trip.com(Old)" && data.Platform != "Trip.com (Old)" && data.Platform != "Hostelworld Group" {
+			if data.Platform != "Booking.com" && data.Platform != "Agoda" && data.Platform != "Expedia" && data.Platform != "Trip.com(Old)" && data.Platform != "Trip.com (Old)" && data.Platform != "Trip.com(New)" && data.Platform != "Hostelworld Group" {
 				resultData = append(resultData, data)
 			}
 			count += 1

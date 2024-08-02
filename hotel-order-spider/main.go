@@ -219,58 +219,58 @@ func main() {
 }
 
 func readConfigYaml() []string {
-    platformMap := map[int]string{
-        1: "booking",
-        2: "agoda",
-        3: "expedia",
-        4: "oldSIM",
-        5: "newSIM",
-        6: "owlting",
-        7: "airbnb",
-        8: "mastri",
-        9: "ctrip",
-        10: "hostelworld",
-        11: "traiwan",
-    }
+	platformMap := map[int]string{
+		1:  "booking",
+		2:  "agoda",
+		3:  "expedia",
+		4:  "oldSIM",
+		5:  "newSIM",
+		6:  "owlting",
+		7:  "airbnb",
+		8:  "mastri",
+		9:  "ctrip",
+		10: "hostelworld",
+		11: "traiwan",
+	}
 
-    configPathMap := map[string]string{
-        "booking":     "./config/config_booking.yaml",
-        "agoda":       "./config/config_agoda.yaml",
-        "expedia":     "./config/config_expedia.yaml",
-        "oldSIM":      "./config/config_oldSIM.yaml",
-        "newSIM":      "./config/config_newSIM.yaml",
-        "owlting":     "./config/config_owlting.yaml",
-        "airbnb":      "./config/config_airbnb.yaml",
-        "mastri":      "./config/config_mastri.yaml",
-        "ctrip":       "./config/config_ctrip.yaml",
-        "hostelworld": "./config/config_hostelworld.yaml",
-        "traiwan":     "./config/config_traiwan.yaml",
-    }
+	configPathMap := map[string]string{
+		"booking":     "./config/config_booking.yaml",
+		"agoda":       "./config/config_agoda.yaml",
+		"expedia":     "./config/config_expedia.yaml",
+		"oldSIM":      "./config/config_oldSIM.yaml",
+		"newSIM":      "./config/config_newSIM.yaml",
+		"owlting":     "./config/config_owlting.yaml",
+		"airbnb":      "./config/config_airbnb.yaml",
+		"mastri":      "./config/config_mastri.yaml",
+		"ctrip":       "./config/config_ctrip.yaml",
+		"hostelworld": "./config/config_hostelworld.yaml",
+		"traiwan":     "./config/config_traiwan.yaml",
+	}
 
-    // Create a slice for the select labels
-    var labels []string
-    for i := 1; i <= len(platformMap); i++ {
-        labels = append(labels, fmt.Sprintf("%d:%s", i, platformMap[i]))
-    }
+	// Create a slice for the select labels
+	var labels []string
+	for i := 1; i <= len(platformMap); i++ {
+		labels = append(labels, fmt.Sprintf("%d:%s", i, platformMap[i]))
+	}
 
-    // Create a new promptui.Select
-    selectPrompt := promptui.Select{
-        Label: "請選擇要執行的平台",
-        Items: labels,
-    }
+	// Create a new promptui.Select
+	selectPrompt := promptui.Select{
+		Label: "請選擇要執行的平台",
+		Items: labels,
+	}
 
-    // Run the select prompt and capture the selected index
-    selectedIndex, _, err := selectPrompt.Run()
+	// Run the select prompt and capture the selected index
+	selectedIndex, _, err := selectPrompt.Run()
 
-    if err != nil {
-        fmt.Printf("選擇失敗 %v\n", err)
-        os.Exit(1)
-    }
+	if err != nil {
+		fmt.Printf("選擇失敗 %v\n", err)
+		os.Exit(1)
+	}
 
-    // Retrieve the selected config file path using platformMap and configPathMap
-    selectedConfigFiles := []string{configPathMap[platformMap[selectedIndex+1]]}
+	// Retrieve the selected config file path using platformMap and configPathMap
+	selectedConfigFiles := []string{configPathMap[platformMap[selectedIndex+1]]}
 
-    return selectedConfigFiles
+	return selectedConfigFiles
 }
 
 func processAllHotel(resultDB APIResponse, platformName string, platform map[string]interface{}, period string, dateFrom string, dateTo string, startID string, endID string) {

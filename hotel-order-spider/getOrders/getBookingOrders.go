@@ -484,7 +484,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 		fmt.Println("setParseHtmlToDB failed!")
 		return
 	}
-	time.Sleep(30 * time.Second)
+	time.Sleep(25 * time.Second)
 }
 
 func GetBookingSessionID(cookie string) string {
