@@ -71,7 +71,7 @@ func GetNewSIM(platform map[string]interface{}, dateFrom, dateTo, newSIMAccommod
 	err := json.Unmarshal([]byte(result), &ordersData)
 	if err != nil {
 		fmt.Println("JSON解碼錯誤:", err)
-		
+
 		return
 	}
 

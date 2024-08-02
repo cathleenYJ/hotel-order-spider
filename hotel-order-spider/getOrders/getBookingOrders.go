@@ -233,7 +233,7 @@ func GetBooking(platform map[string]interface{}, platformName, period, dateFrom,
 					fmt.Println("countAmount / totalAmount", countAmount, "/", totalAmount)
 				}
 			}
-			time.Sleep(3 * time.Second)
+			time.Sleep(5 * time.Second)
 		}
 	} else if parse == "HTML" {
 		session := GetBookingSessionID(cookie)

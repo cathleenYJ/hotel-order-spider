@@ -156,6 +156,7 @@ func GetOldSIM(platform map[string]interface{}, dateFrom, dateTo, oldSIMAccommod
 		fmt.Println("count / total : ", count, " / ", total)
 		fmt.Println("")
 	}
+	time.Sleep(5 * time.Second)
 }
 
 func DoRequestAndGetResponse_oldSIM(method string, url string, reqBody io.Reader, cookie string, token string, tokenUri string, resBody interface{}) error {

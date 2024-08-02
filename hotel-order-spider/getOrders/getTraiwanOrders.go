@@ -149,6 +149,7 @@ func GetTraiwan(platform map[string]interface{}, dateFrom, dateTo string) {
 			}
 		}
 		fmt.Println("resultdata", resultData)
+		time.Sleep(5 * time.Second)
 
 		resultDataJSON, err := json.Marshal(resultData)
 		if err != nil {

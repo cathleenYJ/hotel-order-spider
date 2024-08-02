@@ -228,13 +228,12 @@ func GetAgoda(platform map[string]interface{}, dateFrom, dateTo, agodaAccommodat
 				messages = messages + message.MessageProperty + "\n"
 			}
 			arrangedData.GuestRequest = messages
-
-			time.Sleep(1 * time.Second)
 		}
 		resultData = append(resultData, arrangedData)
 	}
 
 	fmt.Println("resultData", resultData)
+	time.Sleep(5 * time.Second)
 
 	resultDataJSON, err := json.Marshal(resultData)
 	if err != nil {

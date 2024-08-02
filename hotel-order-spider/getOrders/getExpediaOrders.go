@@ -124,6 +124,7 @@ func GetExpedia(platform map[string]interface{}, dateFrom, dateTo, expediaAccomm
 		resultData = append(resultData, data)
 	}
 	fmt.Println("resultData", resultData)
+	time.Sleep(5 * time.Second)
 
 	resultDataJSON, err := json.Marshal(resultData)
 	if err != nil {

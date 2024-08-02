@@ -232,6 +232,7 @@ func GetAirbnb(platform map[string]interface{}, dateFrom, dateTo string) {
 	}
 
 	fmt.Print("resultData", resultData)
+	time.Sleep(5 * time.Second)
 
 	resultDataJSON, err := json.Marshal(resultData)
 	if err != nil {

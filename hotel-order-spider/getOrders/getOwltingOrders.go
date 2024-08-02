@@ -187,8 +187,7 @@ func GetOwlting(platform map[string]interface{}, dateFrom, dateTo, owltingAccomm
 		}
 	}
 	fmt.Println("resultdata", resultData)
-
-	fmt.Println(resultData)
+	time.Sleep(5 * time.Second)
 
 	resultDataJSON, err := json.Marshal(resultData)
 	if err != nil {

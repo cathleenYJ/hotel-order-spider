@@ -232,6 +232,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 							}
 						}
 						fmt.Println("VCC resultdata", resultData)
+						time.Sleep(5 * time.Second)
 
 						if len(resultData) != 0 {
 							// 將 data 轉換為 JSON 格式
@@ -322,6 +323,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 									}
 								}
 								fmt.Println("預付-已提現 resultdata", resultData)
+								time.Sleep(5 * time.Second)
 
 								if len(resultData) != 0 {
 									// 將 data 轉換為 JSON 格式
@@ -416,6 +418,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 									}
 								}
 								fmt.Println("預付-待提現 resultdata", resultData)
+								time.Sleep(5 * time.Second)
 
 								if len(resultData) != 0 {
 									// 將 data 轉換為 JSON 格式
@@ -523,6 +526,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 							}
 						}
 						fmt.Println("現付 resultData:", resultData)
+						time.Sleep(5 * time.Second)
 
 						if len(resultData) != 0 {
 							// 將 data 轉換為 JSON 格式
@@ -607,7 +611,7 @@ func GetCtrip(platform map[string]interface{}, platformName, accountName, dateFr
 						}
 
 						pageIndex++
-						time.Sleep(1 * time.Second)
+						time.Sleep(5 * time.Second)
 						fmt.Println("resultdata", resultData)
 
 						if len(resultData) != 0 {
