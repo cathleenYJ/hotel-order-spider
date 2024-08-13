@@ -116,6 +116,7 @@ type RevenueAccommodationInformation struct {
 	DataDestination              string    `json:"dataDestination" form:"dataDestination" gorm:"column:data_destination;"`
 	PaymentSettle                string    `json:"paymentSettle" form:"paymentSettle" gorm:"column:payment_settle;"`
 	PreferredLanguage            string    `json:"preferredLanguage" form:"preferredLanguage" gorm:"column:preferred_language;"`
+	NabeAccommodationId          string    `json:"nabeAccommodationId" form:"nabeAccommodationId" gorm:"column:nabe_accommodation_id;"`
 }
 
 type ReservationsDB struct {
@@ -231,6 +232,7 @@ func readConfigYaml() []string {
 		9:  "ctrip",
 		10: "hostelworld",
 		11: "traiwan",
+		12: "nabe",
 	}
 
 	configPathMap := map[string]string{
@@ -245,6 +247,7 @@ func readConfigYaml() []string {
 		"ctrip":       "./config/config_ctrip.yaml",
 		"hostelworld": "./config/config_hostelworld.yaml",
 		"traiwan":     "./config/config_traiwan.yaml",
+		"nabe":        "./config/config_nabe.yaml",
 	}
 
 	// Create a slice for the select labels
@@ -296,18 +299,18 @@ func setHotelId(hotel RevenueAccommodationInformation, platformName string, plat
 	oldSIMAccommodationId := hotel.OldSiteminderAccommodationId
 	newSIMAccommodationId := hotel.NewSiteminderAccommodationId
 	owltingAccommodationId := hotel.OwltingAccommodationId
+	nabeAccommodationId := hotel.NabeAccommodationId
 	operationStatus := hotel.OperationStatus
 
 	if operationStatus != "已停運" {
-
-		processPlatform(bookingAccommodationId, platformName, platform, period, dateFrom, dateTo, hotelName, mrhostId, agodaAccommodationId, expediaAccommodationId, oldSIMAccommodationId, newSIMAccommodationId, owltingAccommodationId)
+		processPlatform(bookingAccommodationId, platformName, platform, period, dateFrom, dateTo, hotelName, mrhostId, agodaAccommodationId, expediaAccommodationId, oldSIMAccommodationId, newSIMAccommodationId, owltingAccommodationId, nabeAccommodationId)
 	}
 	fmt.Println()
 	fmt.Println(hotelName, "執行完畢")
 	fmt.Println("------------------------------ END ------------------------------")
 }
 
-func processPlatform(bookingAccommodationId string, platformName string, platform map[string]interface{}, period string, dateFrom string, dateTo string, hotelName string, mrhostId string, agodaAccommodationId string, expediaAccommodationId string, oldSIMAccommodationId string, newSIMAccommodationId string, owltingAccommodationId string) {
+func processPlatform(bookingAccommodationId string, platformName string, platform map[string]interface{}, period string, dateFrom string, dateTo string, hotelName string, mrhostId string, agodaAccommodationId string, expediaAccommodationId string, oldSIMAccommodationId string, newSIMAccommodationId string, owltingAccommodationId string, nabeAccommodationId string) {
 	if bookingAccommodationId != "" {
 		if platformName == "Booking" {
 			getOrders.GetBooking(platform, platformName, period, dateFrom, dateTo, bookingAccommodationId, hotelName, mrhostId)
@@ -339,6 +342,12 @@ func processPlatform(bookingAccommodationId string, platformName string, platfor
 	if owltingAccommodationId != "" {
 		if platformName == "Owlting" {
 			getOrders.GetOwlting(platform, dateFrom, dateTo, owltingAccommodationId, hotelName, mrhostId)
+		}
+	}
+
+	if nabeAccommodationId != "" {
+		if platformName == "Nabe" {
+			getOrders.GetNabe(platform, dateFrom, dateTo, nabeAccommodationId, hotelName, mrhostId)
 		}
 	}
 }

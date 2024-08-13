@@ -1,0 +1,6 @@
+period: "2024-07"
+account:
+  - name: "mrhost"
+    platform:
+      - name: "Nabe"
+        cookie: "ci_session=a1d746546c299cb87eb383ee7f1ce574b109bf6f"
